@@ -530,60 +530,6 @@ function ContactDetailModal({
   );
 }
 
-function ContactForm({ kind, initial }: { kind: Tab; initial?: Customer | Supplier }) {
-  const isCustomer = kind === "customers";
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      <Field label={`${isCustomer ? "Customer" : "Supplier"} ID`}>
-        <input className="input" placeholder={isCustomer ? "Auto-generated CUST-2026-NNNNNN" : "Auto-generated SUPP-2026-NNNNNN"} disabled defaultValue={initial?.id} />
-      </Field>
-      <Field label="Status">
-        <select className="input" defaultValue={initial?.status || "active"}>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </Field>
-      <Field label={isCustomer ? "Customer / business name" : "Supplier / cooperative name"} full>
-        <input className="input" placeholder="Mwanza Refinery Ltd." defaultValue={initial?.name} />
-      </Field>
-      <Field label="Email">
-        <input className="input" type="email" placeholder="contact@example.tz" defaultValue={isCustomer ? (initial as Customer)?.email : (initial as Supplier)?.email} />
-      </Field>
-      <Field label="Phone">
-        <input className="input" placeholder="+255 ..." defaultValue={isCustomer ? (initial as Customer)?.phone : (initial as Supplier)?.contact} />
-      </Field>
-      <Field label="Location" full>
-        <input className="input" placeholder="Region · City" defaultValue={initial?.location} />
-      </Field>
-      {isCustomer ? (
-        <>
-          <Field label="Tax / TIN">
-            <input className="input" placeholder="109-204-883" />
-          </Field>
-          <Field label="Payment terms">
-            <select className="input">
-              <option>Net 7</option><option>Net 14</option><option>Net 30</option><option>On receipt</option>
-            </select>
-          </Field>
-        </>
-      ) : (
-        <>
-          <Field label="License number">
-            <input className="input" placeholder="ML-XXXXX-2024" />
-          </Field>
-          <Field label="Default purity">
-            <select className="input">
-              <option>Raw</option><option>24K</option><option>22K</option><option>18K</option>
-            </select>
-          </Field>
-        </>
-      )}
-      <Field label="Notes" full>
-        <textarea rows={2} className="input" placeholder="Optional internal notes" />
-      </Field>
-    </div>
-  );
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
