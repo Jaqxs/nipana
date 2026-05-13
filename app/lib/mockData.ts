@@ -170,3 +170,10 @@ export const ANOMALIES = [
   { id: "AN-2217", txn: "TX-018299", reason: "Possible duplicate within 24h", severity: "warning", time: "yesterday" },
   { id: "AN-2216", txn: "TX-018287", reason: "Single tx > $20k threshold", severity: "warning", time: "2 days ago" },
 ];
+
+export const SITES = [
+  { id: "SITE-001", name: "Mwanza Vault", location: "Mwanza · Lake Zone", manager: "Kelvin Conrad", capacity: 1000, currentStock: 240.5, security: "Maximum", status: "Active", staffCount: 12, lastAudit: "May 10, 2026" },
+  { id: "SITE-002", name: "DSM Distribution", location: "Dar es Salaam · Port", manager: "Sarah Juma", capacity: 500, currentStock: 120.2, security: "High", status: "Active", staffCount: 8, lastAudit: "May 12, 2026" },
+  { id: "SITE-003", name: "Geita Collection", location: "Geita Region · Mine", manager: "John Doe", capacity: 2000, currentStock: 880.0, security: "High", status: "Active", staffCount: 24, lastAudit: "May 08, 2026" },
+  { id: "SITE-004", name: "Shinyanga Hub", location: "Shinyanga · Central", manager: "Alice Abel", capacity: 800, currentStock: 612.2, security: "Standard", status: "Active", staffCount: 6, lastAudit: "May 11, 2026" },
+];

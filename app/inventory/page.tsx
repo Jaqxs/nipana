@@ -286,6 +286,7 @@ export default function InventoryPage() {
         onClose={() => setDetail(null)} 
         format={format} 
         formatUSD={formatUSD}
+        movements={movements}
         onPrint={(b) => alert(`Printing certificate for ${b.batch}`)}
         onMove={(b) => setConfirm({ batch: b, action: "move" })}
         onAdjust={(b) => setConfirm({ batch: b, action: "adjust" })}
@@ -299,11 +300,12 @@ export default function InventoryPage() {
   );
 }
 
-function BatchDetailModal({ batch, onClose, format, formatUSD, onPrint, onMove, onAdjust }: {
+function BatchDetailModal({ batch, onClose, format, formatUSD, movements, onPrint, onMove, onAdjust }: {
   batch: Batch | null;
   onClose: () => void;
   format: (n: number) => string;
   formatUSD: (n: number) => string;
+  movements: any[];
   onPrint?: (b: Batch) => void;
   onMove?: (b: Batch) => void;
   onAdjust?: (b: Batch) => void;
