@@ -8,6 +8,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: "ri-layout-grid-line", admin: false },
   { href: "/transactions", label: "Transactions", icon: "ri-exchange-line", admin: false },
   { href: "/inventory", label: "Inventory", icon: "ri-archive-line", admin: false },
+  { href: "/sites", label: "Sites", icon: "ri-map-pin-line", admin: false },
   { href: "/invoices", label: "Invoices", icon: "ri-file-paper-2-line", admin: false },
   { href: "/quotations", label: "Quotations", icon: "ri-price-tag-3-line", admin: false },
   { href: "/contacts", label: "Contacts", icon: "ri-contacts-book-line", admin: false },

@@ -22,7 +22,19 @@ const TYPE_META: Record<string, { icon: string; tint: string }> = {
   "Cash Outflow":  { icon: "ri-arrow-up-line",          tint: "#b56b4a" },
 };
 
-export function TransactionDetailModal({ tx, onClose }: { tx: TransactionLike | null; onClose: () => void }) {
+export function TransactionDetailModal({ 
+  tx, 
+  onClose,
+  onApprove,
+  onPrint,
+  onDownloadReceipt
+}: { 
+  tx: TransactionLike | null; 
+  onClose: () => void;
+  onApprove?: (tx: TransactionLike) => void;
+  onPrint?: (tx: TransactionLike) => void;
+  onDownloadReceipt?: (tx: TransactionLike) => void;
+}) {
   const { format } = useCurrency();
   if (!tx) return null;
 
@@ -41,9 +53,11 @@ export function TransactionDetailModal({ tx, onClose }: { tx: TransactionLike | 
       title={tx.ref}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Close</button>
-        <button className="btn-secondary"><i className="ri-printer-line" />Print</button>
-        <button className="btn-secondary"><i className="ri-download-line" />Receipt</button>
-        {tx.status === "pending" && <button className="btn-primary"><i className="ri-check-line" />Approve</button>}
+        <button className="btn-secondary" onClick={() => onPrint?.(tx)}><i className="ri-printer-line" />Print</button>
+        <button className="btn-secondary" onClick={() => onDownloadReceipt?.(tx)}><i className="ri-download-line" />Receipt</button>
+        {tx.status === "pending" && onApprove && (
+          <button className="btn-primary" onClick={() => onApprove(tx)}><i className="ri-check-line" />Approve</button>
+        )}
       </>}>
       {/* Hero */}
       <div className="surface-flat p-5 mb-5"

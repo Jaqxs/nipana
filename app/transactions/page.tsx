@@ -26,18 +26,105 @@ const ROWS: Tx[] = [
   { ref: "TX-018330", date: "Apr 24", type: "Processing", party: "Refining Batch #223", amount: -2_100, status: "confirmed" },
 ];
 
+import { usePersistence } from "../lib/persistence-context";
+
 export default function TransactionsPage() {
+  const { 
+    transactions, addTransaction, updateTransaction, deleteTransaction,
+    addInventoryBatch, addCashFlow, loading, error
+  } = usePersistence();
   const [type, setType] = useState("All");
   const [status, setStatus] = useState("All");
   const [search, setSearch] = useState("");
-  const [detail, setDetail] = useState<Tx | null>(null);
+  const [detail, setDetail] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const [confirming, setConfirming] = useState<{ tx: Tx; action: string } | null>(null);
+  const [confirming, setConfirming] = useState<{ tx: any; action: string } | null>(null);
   const { format } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
 
-  const filtered = ROWS
+  // New Transaction Form State
+  const [newTx, setNewTx] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type: "Gold Sale",
+    amount: "",
+    currency: "USD",
+    party: "",
+    description: ""
+  });
+
+  const handleCreate = () => {
+    if (!newTx.amount || !newTx.party) return alert("Please fill in required fields");
+    const amount = parseFloat(newTx.amount) * (newTx.type.toLowerCase().includes("purchase") || newTx.type.toLowerCase().includes("expense") || newTx.type.toLowerCase().includes("outflow") ? -1 : 1);
+    
+    if (editing) {
+      updateTransaction(editing.ref, {
+        date: new Date(newTx.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+        type: newTx.type,
+        party: newTx.party,
+        amount: amount,
+      });
+      setEditing(null);
+    } else {
+      addTransaction({
+        ref: `TX-${Math.floor(Math.random() * 90000) + 10000}`,
+        date: new Date(newTx.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+        type: newTx.type,
+        party: newTx.party,
+        amount: amount,
+        status: "pending"
+      });
+    }
+    setCreating(false);
+    setNewTx({
+      date: new Date().toISOString().split('T')[0],
+      type: "Gold Sale",
+      amount: "",
+      currency: "USD",
+      party: "",
+      description: ""
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirming) return;
+    if (confirming.action === "approve") {
+      updateTransaction(confirming.tx.ref, { status: "confirmed" });
+      
+      const { type, amount, party, ref } = confirming.tx;
+      const absAmount = Math.abs(amount);
+      const now = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+      // Side Effects
+      if (type === "Gold Purchase") {
+        addInventoryBatch({
+          batch: `BATCH-${ref.split('-')[1]}-${Math.floor(Math.random()*900)+100}`,
+          weight: absAmount / 75, // mock weight from amount
+          karat: 24,
+          fine: absAmount / 75,
+          location: "Vault A",
+          status: "Available",
+          value: absAmount,
+          source: ref
+        });
+        addCashFlow({
+          date: now, type: "out", category: "Gold purchase", desc: `${party} · ${ref}`, amount: absAmount
+        });
+      } else if (type === "Gold Sale") {
+        addCashFlow({
+          date: now, type: "in", category: "Gold sale proceeds", desc: `${party} · ${ref}`, amount: absAmount
+        });
+      }
+    } else if (confirming.action === "reject") {
+      updateTransaction(confirming.tx.ref, { status: "rejected" });
+    } else if (confirming.action === "delete") {
+      deleteTransaction(confirming.tx.ref);
+    }
+    setConfirming(null);
+  };
+
+  const filtered = transactions
     .filter((r) => inRangeFromShortDate(r.date))
     .filter((r) => type === "All" || r.type === type)
     .filter((r) => status === "All" || r.status.toLowerCase() === status.toLowerCase())
@@ -61,6 +148,9 @@ export default function TransactionsPage() {
           </>
         }
       />
+
+      {loading && <div className="surface p-8 text-center text-ink-muted mb-6"><i className="ri-loader-4-line animate-spin text-2xl" /> Syncing with backend...</div>}
+      {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-6 text-sm flex items-center gap-2"><i className="ri-error-warning-line" /> {error}</div>}
 
       {/* Compact filter row with dropdowns */}
       <div className="surface-flat p-3 flex flex-wrap items-center gap-3 mb-5">
@@ -128,13 +218,32 @@ export default function TransactionsPage() {
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(t) },
-                    { label: "Edit", icon: "ri-edit-line", onClick: () => alert(`Edit ${t.ref}`) },
-                    { label: "Duplicate", icon: "ri-file-copy-line", onClick: () => alert(`Duplicate ${t.ref}`) },
+                    { label: "Edit", icon: "ri-edit-line", onClick: () => {
+                      setEditing(t);
+                      setNewTx({
+                        date: new Date().toISOString().split('T')[0], // Placeholder for date parsing
+                        type: t.type,
+                        amount: Math.abs(t.amount).toString(),
+                        currency: "USD",
+                        party: t.party,
+                        description: ""
+                      });
+                      setCreating(true);
+                    } },
+                    { label: "Duplicate", icon: "ri-file-copy-line", onClick: () => {
+                      addTransaction({ ...t, ref: `TX-${Math.floor(Math.random() * 90000) + 10000}`, status: "pending" });
+                    } },
                     ...(t.status === "pending" ? [
                       { label: "Approve", icon: "ri-check-line", onClick: () => setConfirming({ tx: t, action: "approve" }) },
                       { label: "Reject", icon: "ri-close-line", onClick: () => setConfirming({ tx: t, action: "reject" }), danger: true },
                     ] : []),
-                    { label: "Download receipt", icon: "ri-download-line", onClick: () => alert("Download"), divider: true },
+                      { label: "Download receipt", icon: "ri-download-line", onClick: () => {
+                        const link = document.createElement("a");
+                        link.href = "#";
+                        link.download = `receipt-${t.ref}.pdf`;
+                        link.click();
+                        alert("Mock receipt download started");
+                      } },
                     { label: "Delete", icon: "ri-delete-bin-line", onClick: () => setConfirming({ tx: t, action: "delete" }), danger: true, divider: true },
                   ]} />
                 </td>
@@ -144,7 +253,13 @@ export default function TransactionsPage() {
         </table>
       </div>
 
-      <TransactionDetailModal tx={detail} onClose={() => setDetail(null)} />
+      <TransactionDetailModal 
+        tx={detail} 
+        onClose={() => setDetail(null)} 
+        onApprove={(tx) => setConfirming({ tx, action: "approve" })}
+        onPrint={(tx) => alert(`Printing transaction ${tx.ref}`)}
+        onDownloadReceipt={(tx) => alert(`Downloading receipt for ${tx.ref}`)}
+      />
 
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="transactions" rowCount={filtered.length} />
 
@@ -154,7 +269,7 @@ export default function TransactionsPage() {
           <button className="btn-secondary" onClick={() => setConfirming(null)}>Cancel</button>
           <button className={confirming?.action === "approve" ? "btn-primary" : "btn-secondary"}
             style={confirming?.action !== "approve" ? { background: "#a85944", color: "#fff", border: "none" } : undefined}
-            onClick={() => setConfirming(null)}>
+            onClick={handleConfirmAction}>
             {confirming?.action === "approve" ? "Approve" : confirming?.action === "reject" ? "Reject" : "Delete"}
           </button>
         </>}>
@@ -165,27 +280,29 @@ export default function TransactionsPage() {
         </p>
       </Modal>
 
-      <Modal open={creating} onClose={() => setCreating(false)} size="lg"
-        eyebrow="New transaction" title="Record a transaction"
+      <Modal open={creating} onClose={() => { setCreating(false); setEditing(null); }} size="lg"
+        eyebrow={editing ? "Edit transaction" : "New transaction"} title={editing ? `Update ${editing.ref}` : "Record a transaction"}
         footer={<>
           <button className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button>
-          <button className="btn-secondary" onClick={() => setCreating(false)}>Save draft</button>
-          <button className="btn-primary" onClick={() => setCreating(false)}>Submit for approval</button>
+          <button className="btn-secondary" onClick={handleCreate}>Save draft</button>
+          <button className="btn-primary" onClick={handleCreate}>Submit for approval</button>
         </>}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field label="Date"><input type="date" defaultValue="2026-05-04" className="input" /></Field>
+          <Field label="Date"><input type="date" value={newTx.date} onChange={(e) => setNewTx({ ...newTx, date: e.target.value })} className="input" /></Field>
           <Field label="Type">
-            <select className="input">{TYPES.slice(1).map((t) => <option key={t}>{t}</option>)}</select>
+            <select className="input" value={newTx.type} onChange={(e) => setNewTx({ ...newTx, type: e.target.value })}>
+              {TYPES.slice(1).map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </Field>
           <Field label="Amount">
             <div className="flex">
-              <input className="input rounded-r-none" placeholder="0.00" />
-              <select className="input rounded-l-none w-24">
+              <input className="input rounded-r-none" placeholder="0.00" value={newTx.amount} onChange={(e) => setNewTx({ ...newTx, amount: e.target.value })} />
+              <select className="input rounded-l-none w-24" value={newTx.currency} onChange={(e) => setNewTx({ ...newTx, currency: e.target.value })}>
                 <option>USD</option><option>TZS</option>
               </select>
             </div>
           </Field>
-          <Field label="Counterparty"><input className="input" placeholder="Supplier or customer" /></Field>
+          <Field label="Counterparty"><input className="input" placeholder="Supplier or customer" value={newTx.party} onChange={(e) => setNewTx({ ...newTx, party: e.target.value })} /></Field>
           <Field label="Reference number"><input className="input" placeholder="Auto-generated" disabled /></Field>
           <Field label="AI suggested category" hint="92% confidence">
             <div className="input flex items-center gap-2">
@@ -195,7 +312,7 @@ export default function TransactionsPage() {
             </div>
           </Field>
           <Field label="Description" full>
-            <textarea rows={3} className="input" placeholder="Minimum 10 characters" />
+            <textarea rows={3} className="input" placeholder="Minimum 10 characters" value={newTx.description} onChange={(e) => setNewTx({ ...newTx, description: e.target.value })} />
           </Field>
           <Field label="Receipt attachment" full>
             <button type="button" className="input flex items-center gap-2 text-ink-muted text-left">
@@ -207,7 +324,6 @@ export default function TransactionsPage() {
     </div>
   );
 }
-
 function Field({ label, children, full, hint }: { label: string; children: React.ReactNode; full?: boolean; hint?: string }) {
   return (
     <label className={`block ${full ? "md:col-span-2" : ""}`}>

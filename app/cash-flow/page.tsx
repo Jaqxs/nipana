@@ -8,16 +8,7 @@ import { CashFlowWaterfall } from "../components/Charts";
 import { useCurrency } from "../lib/currency-context";
 import { useDateRange } from "../lib/date-range-context";
 
-const SUMMARY = [
-  { label: "Gross Revenue", value: 364_900, tone: "ink" },
-  { label: "Total COGS", value: 198_300, tone: "ink" },
-  { label: "Gross Profit", value: 166_600, tone: "sage" },
-  { label: "Operating Expenses", value: 81_000, tone: "ink" },
-  { label: "Net Profit", value: 85_600, tone: "sage" },
-  { label: "Net Cash Position", value: 178_220, tone: "ink" },
-  { label: "Burn Rate", value: 64_900, tone: "terra" },
-  { label: "Runway", value: 0, tone: "ink", display: "27.5 mo" },
-];
+// Removed hardcoded SUMMARY
 
 interface Flow { date: string; type: "in" | "out"; category: string; desc: string; amount: number; }
 
@@ -31,7 +22,10 @@ const FLOWS: Flow[] = [
   { date: "Apr 30", type: "out", category: "Operational", desc: "Office rent — May", amount: 2_800 },
 ];
 
+import { usePersistence } from "../lib/persistence-context";
+
 export default function CashFlowPage() {
+  const { cashFlow, addCashFlow } = usePersistence();
   const [filter, setFilter] = useState<"all" | "in" | "out">("all");
   const [detail, setDetail] = useState<Flow | null>(null);
   const [adding, setAdding] = useState<"in" | "out" | null>(null);
@@ -39,7 +33,54 @@ export default function CashFlowPage() {
   const { format } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
 
-  const flows = FLOWS
+  const revenue = cashFlow.filter(f => f.type === 'in' && f.category.toLowerCase().includes('sale')).reduce((a, b) => a + b.amount, 0);
+  const cogs = cashFlow.filter(f => f.type === 'out' && f.category.toLowerCase().includes('purchase')).reduce((a, b) => a + b.amount, 0);
+  const expenses = cashFlow.filter(f => f.type === 'out' && !f.category.toLowerCase().includes('purchase')).reduce((a, b) => a + b.amount, 0);
+  const netCash = cashFlow.reduce((a, b) => a + (b.type === 'in' ? b.amount : -b.amount), 0);
+
+  const summary = [
+    { label: "Gross Revenue", value: revenue, tone: "ink" },
+    { label: "Total COGS", value: cogs, tone: "ink" },
+    { label: "Gross Profit", value: revenue - cogs, tone: "sage" },
+    { label: "Operating Expenses", value: expenses, tone: "ink" },
+    { label: "Net Profit", value: revenue - cogs - expenses, tone: "sage" },
+    { label: "Net Cash Position", value: netCash, tone: "ink" },
+    { label: "Burn Rate", value: expenses / 4, tone: "terra", hint: "weekly" },
+    { label: "Runway", value: 0, tone: "ink", display: expenses > 0 ? `${(netCash / (expenses / 4)).toFixed(1)} wks` : "∞" },
+  ];
+
+  // Form State
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    amount: "",
+    category: "",
+    currency: "USD",
+    payee: "",
+    description: ""
+  });
+
+  const handleSave = () => {
+    if (!formData.amount || !formData.category) return alert("Amount and Category are required");
+    
+    addCashFlow({
+      date: new Date(formData.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+      type: adding,
+      category: formData.category,
+      desc: formData.payee || formData.description,
+      amount: parseFloat(formData.amount)
+    });
+    setAdding(null);
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      amount: "",
+      category: "",
+      currency: "USD",
+      payee: "",
+      description: ""
+    });
+  };
+
+  const flows = cashFlow
     .filter((f) => inRangeFromShortDate(f.date))
     .filter((f) => filter === "all" || f.type === filter);
 
@@ -53,10 +94,16 @@ export default function CashFlowPage() {
             <button className="btn-secondary" onClick={() => setExportOpen(true)}>
               <i className="ri-download-line" /> Export
             </button>
-            <button className="btn-secondary" onClick={() => setAdding("in")}>
+            <button className="btn-secondary" onClick={() => {
+              setFormData({ ...formData, category: "Gold Sale Proceeds" });
+              setAdding("in");
+            }}>
               <i className="ri-arrow-down-line" /> Inflow
             </button>
-            <button className="btn-primary" onClick={() => setAdding("out")}>
+            <button className="btn-primary" onClick={() => {
+              setFormData({ ...formData, category: "Staff Salaries" });
+              setAdding("out");
+            }}>
               <i className="ri-arrow-up-line" /> Outflow
             </button>
           </>
@@ -64,7 +111,7 @@ export default function CashFlowPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {SUMMARY.map((s) => (
+        {summary.map((s) => (
           <div key={s.label} className="surface p-4">
             <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{s.label}</div>
             <div className={`font-numeric text-2xl mt-1 ${
@@ -117,10 +164,24 @@ export default function CashFlowPage() {
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(f) },
-                    { label: "Open linked record", icon: "ri-external-link-line", onClick: () => alert(`Open ${f.desc}`) },
-                    { label: "Reclassify category", icon: "ri-edit-line", onClick: () => alert("Reclassify") },
-                    { label: "Export entry", icon: "ri-download-line", onClick: () => alert("Export"), divider: true },
-                    { label: "Reverse entry", icon: "ri-arrow-go-back-line", onClick: () => alert("Reverse"), danger: true, divider: true },
+                    { label: "Open linked record", icon: "ri-external-link-line", onClick: () => alert(`Opening linked record: ${f.desc}`) },
+                    { label: "Reclassify category", icon: "ri-edit-line", onClick: () => {
+                      setAdding(f.type);
+                      setFormData({
+                        date: new Date().toISOString().split('T')[0], // would ideally parse from f.date
+                        amount: f.amount.toString(),
+                        category: f.category,
+                        currency: "USD",
+                        payee: f.desc.split(' · ')[0] || "",
+                        description: f.desc.split(' · ')[1] || ""
+                      });
+                    } },
+                    { label: "Export entry", icon: "ri-download-line", onClick: () => alert("Exporting entry..."), divider: true },
+                    { label: "Reverse entry", icon: "ri-arrow-go-back-line", onClick: () => {
+                      if (confirm("Reverse this entry? A counter-entry will be created.")) {
+                        addCashFlow({ ...f, type: f.type === "in" ? "out" : "in", category: `REVERSAL: ${f.category}`, date: "Today" });
+                      }
+                    }, danger: true, divider: true },
                   ]} />
                 </td>
               </tr>
@@ -136,20 +197,20 @@ export default function CashFlowPage() {
       <Modal open={!!adding} onClose={() => setAdding(null)}
         eyebrow={`Cash ${adding === "in" ? "inflow" : "outflow"}`}
         title={`Record ${adding === "in" ? "inflow" : "outflow"}`}
-        footer={<><button className="btn-secondary" onClick={() => setAdding(null)}>Cancel</button><button className="btn-primary" onClick={() => setAdding(null)}>Save</button></>}>
+        footer={<><button className="btn-secondary" onClick={() => setAdding(null)}>Cancel</button><button className="btn-primary" onClick={handleSave}>Save</button></>}>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Date"><input type="date" className="input" defaultValue="2026-05-04" /></Field>
-          <Field label="Amount"><input className="input" placeholder="0.00" /></Field>
+          <Field label="Date"><input type="date" className="input" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} /></Field>
+          <Field label="Amount"><input className="input" placeholder="0.00" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} /></Field>
           <Field label="Category">
-            <select className="input">
+            <select className="input" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
               {adding === "in"
-                ? ["Gold Sale Proceeds", "Investor Capital", "Loan Receipt", "Other Income"].map((c) => <option key={c}>{c}</option>)
-                : ["Staff Salaries", "Operational", "Processing", "Logistics & Security", "Loan Repayment", "Tax", "Capital Expenditure"].map((c) => <option key={c}>{c}</option>)}
+                ? ["Gold Sale Proceeds", "Investor Capital", "Loan Receipt", "Other Income"].map((c) => <option key={c} value={c}>{c}</option>)
+                : ["Staff Salaries", "Operational", "Processing", "Logistics & Security", "Loan Repayment", "Tax", "Capital Expenditure"].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
-          <Field label="Currency"><select className="input"><option>USD</option><option>TZS</option></select></Field>
-          <Field label={adding === "in" ? "Source" : "Payee"} full><input className="input" /></Field>
-          <Field label="Description / reference" full><textarea rows={2} className="input" /></Field>
+          <Field label="Currency"><select className="input" value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })}><option>USD</option><option>TZS</option></select></Field>
+          <Field label={adding === "in" ? "Source" : "Payee"} full><input className="input" value={formData.payee} onChange={(e) => setFormData({ ...formData, payee: e.target.value })} /></Field>
+          <Field label="Description / reference" full><textarea rows={2} className="input" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></Field>
         </div>
       </Modal>
     </div>

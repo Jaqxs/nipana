@@ -5,12 +5,19 @@ import { Badge } from "../components/Badge";
 import { Modal } from "../components/Modal";
 import { RowActionsMenu } from "../components/RowActionsMenu";
 import { ExportModal } from "../components/ExportModal";
-import { CUSTOMERS, SUPPLIERS, Customer, Supplier, fmtWeight } from "../lib/mockData";
+import { Stat } from "../components/Stat";
+import { fmtWeight, Customer, Supplier } from "../lib/mockData";
 import { useCurrency } from "../lib/currency-context";
+import { usePersistence } from "../lib/persistence-context";
 
 type Tab = "customers" | "suppliers";
 
 export default function ContactsPage() {
+  const { 
+    customers, suppliers, 
+    addCustomer, updateCustomer, deleteCustomer,
+    addSupplier, updateSupplier, deleteSupplier 
+  } = usePersistence();
   const [tab, setTab] = useState<Tab>("customers");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -20,26 +27,76 @@ export default function ContactsPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const { format } = useCurrency();
 
-  const customers = CUSTOMERS
-    .filter((c) => statusFilter === "All" || c.status === statusFilter.toLowerCase())
-    .filter((c) => !search ||
+  // Form State for Create/Edit
+  const [formData, setFormData] = useState<any>({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    status: "active"
+  });
+
+  const handleSave = () => {
+    if (!formData.name) return alert("Name is required");
+    
+    if (editing) {
+      if ("totalPurchases" in editing) {
+        updateCustomer(editing.id, formData);
+      } else {
+        updateSupplier(editing.id, formData);
+      }
+      setEditing(null);
+    } else {
+      const id = tab === "customers" 
+        ? `CUST-2026-${Math.floor(Math.random() * 900000) + 100000}`
+        : `SUPP-2026-${Math.floor(Math.random() * 900000) + 100000}`;
+      
+      if (tab === "customers") {
+        addCustomer({
+          ...formData,
+          id,
+          totalPurchases: 0,
+          outstanding: 0,
+          joined: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          lastTx: "Never"
+        });
+      } else {
+        addSupplier({
+          ...formData,
+          id,
+          contact: formData.phone,
+          totalSupplied_g: 0,
+          totalPaid: 0,
+          outstanding: 0,
+          joined: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          lastDelivery: "Never"
+        });
+      }
+      setCreating(false);
+    }
+    setFormData({ name: "", email: "", phone: "", location: "", status: "active" });
+  };
+
+  const filteredCustomers = customers
+    .filter((c: any) => statusFilter === "All" || c.status === statusFilter.toLowerCase())
+    .filter((c: any) => !search ||
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.id.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase()));
 
-  const suppliers = SUPPLIERS
-    .filter((s) => statusFilter === "All" || s.status === statusFilter.toLowerCase())
-    .filter((s) => !search ||
+  const filteredSuppliers = suppliers
+    .filter((s: any) => statusFilter === "All" || s.status === statusFilter.toLowerCase())
+    .filter((s: any) => !search ||
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.id.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase()));
 
-  const totalReceivable = CUSTOMERS.reduce((a, b) => a + b.outstanding, 0);
-  const totalPayable = SUPPLIERS.reduce((a, b) => a + b.outstanding, 0);
-  const totalCustomerSpend = CUSTOMERS.reduce((a, b) => a + b.totalPurchases, 0);
-  const totalSupplied_g = SUPPLIERS.reduce((a, b) => a + b.totalSupplied_g, 0);
+  const totalReceivable = customers.reduce((a: number, b: any) => a + b.outstanding, 0);
+  const totalPayable = suppliers.reduce((a: number, b: any) => a + b.outstanding, 0);
+  const totalCustomerSpend = customers.reduce((a: number, b: any) => a + b.totalPurchases, 0);
+  const totalSupplied_g = suppliers.reduce((a: number, b: any) => a + b.totalSupplied_g, 0);
 
-  const filteredCount = tab === "customers" ? customers.length : suppliers.length;
+  const filteredCount = tab === "customers" ? filteredCustomers.length : filteredSuppliers.length;
   const resourceLabel = tab === "customers" ? "customers" : "suppliers";
 
   return (
@@ -52,7 +109,11 @@ export default function ContactsPage() {
             <button className="btn-secondary" onClick={() => setExportOpen(true)}>
               <i className="ri-download-line" /> Export
             </button>
-            <button className="btn-primary" onClick={() => setCreating(true)}>
+            <button className="btn-primary" onClick={() => {
+              setEditing(null);
+              setFormData({ name: "", email: "", phone: "", location: "", status: "active" });
+              setCreating(true);
+            }}>
               <i className="ri-user-add-line" /> Register {tab === "customers" ? "buyer" : "seller"}
             </button>
           </>
@@ -61,8 +122,8 @@ export default function ContactsPage() {
 
       {/* Top metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Stat label="Customers" value={CUSTOMERS.length.toString()} hint={`${CUSTOMERS.filter(c => c.status === "active").length} active`} icon="ri-user-3-line" />
-        <Stat label="Suppliers" value={SUPPLIERS.length.toString()} hint={`${SUPPLIERS.filter(s => s.status === "active").length} active`} icon="ri-truck-line" />
+        <Stat label="Customers" value={customers.length.toString()} hint={`${customers.filter((c: any) => c.status === "active").length} active`} icon="ri-user-3-line" />
+        <Stat label="Suppliers" value={suppliers.length.toString()} hint={`${suppliers.filter((s: any) => s.status === "active").length} active`} icon="ri-truck-line" />
         <Stat label="Customer receivable" value={format(totalReceivable)} hint="outstanding balance" icon="ri-arrow-right-down-line" tone="rose" />
         <Stat label="Supplier payable" value={format(totalPayable)} hint="awaiting payment" icon="ri-arrow-right-up-line" tone="rose" />
       </div>
@@ -75,14 +136,14 @@ export default function ContactsPage() {
             className={`px-4 py-1.5 rounded-md text-sm transition ${tab === "customers" ? "bg-gold-100 text-gold-700" : "text-ink-muted hover:bg-paper-100"}`}
           >
             <i className="ri-user-3-line mr-1.5" />
-            Customers <span className="text-ink-faint ml-1">({CUSTOMERS.length})</span>
+            Customers <span className="text-ink-faint ml-1">({customers.length})</span>
           </button>
           <button
             onClick={() => setTab("suppliers")}
             className={`px-4 py-1.5 rounded-md text-sm transition ${tab === "suppliers" ? "bg-gold-100 text-gold-700" : "text-ink-muted hover:bg-paper-100"}`}
           >
             <i className="ri-truck-line mr-1.5" />
-            Suppliers <span className="text-ink-faint ml-1">({SUPPLIERS.length})</span>
+            Suppliers <span className="text-ink-faint ml-1">({suppliers.length})</span>
           </button>
         </div>
 
@@ -118,9 +179,9 @@ export default function ContactsPage() {
               </tr>
             </thead>
             <tbody>
-              {customers.length === 0 ? (
+              {filteredCustomers.length === 0 ? (
                 <tr><td colSpan={9} className="text-center text-ink-faint py-12">No customers match your filters.</td></tr>
-              ) : customers.map((c) => (
+              ) : filteredCustomers.map((c: any) => (
                 <tr key={c.id} className="clickable" onClick={() => setDetail(c)}>
                   <td className="font-numeric text-ink">{c.id}</td>
                   <td className="text-ink font-medium">{c.name}</td>
@@ -138,14 +199,23 @@ export default function ContactsPage() {
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActionsMenu actions={[
                       { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(c) },
-                      { label: "Edit", icon: "ri-edit-line", onClick: () => setEditing(c) },
+                      { label: "Edit", icon: "ri-edit-line", onClick: () => {
+                        setEditing(c);
+                        setFormData({ name: c.name, email: c.email, phone: c.phone, location: c.location, status: c.status });
+                      } },
                       { label: "Send invoice", icon: "ri-file-paper-2-line", onClick: () => alert(`New invoice for ${c.name}`) },
                       { label: "Send statement", icon: "ri-mail-send-line", onClick: () => alert("Statement sent") },
                       ...(c.outstanding > 0 ? [
                         { label: "Send reminder", icon: "ri-notification-line", onClick: () => alert("Reminder sent") },
                       ] : []),
-                      { label: c.status === "active" ? "Deactivate" : "Activate", icon: c.status === "active" ? "ri-pause-line" : "ri-play-line", onClick: () => alert("Status toggled"), divider: true },
-                      { label: "Delete", icon: "ri-delete-bin-line", onClick: () => alert("Delete"), danger: true, divider: true },
+                      { label: c.status === "active" ? "Deactivate" : "Activate", icon: c.status === "active" ? "ri-pause-line" : "ri-play-line", onClick: () => {
+                        updateCustomer(c.id, { status: c.status === "active" ? "inactive" : "active" });
+                      }, divider: true },
+                      { label: "Delete", icon: "ri-delete-bin-line", onClick: () => {
+                        if (confirm(`Delete customer ${c.name}?`)) {
+                          deleteCustomer(c.id);
+                        }
+                      }, danger: true, divider: true },
                     ]} />
                   </td>
                 </tr>
@@ -168,9 +238,9 @@ export default function ContactsPage() {
               </tr>
             </thead>
             <tbody>
-              {suppliers.length === 0 ? (
+              {filteredSuppliers.length === 0 ? (
                 <tr><td colSpan={9} className="text-center text-ink-faint py-12">No suppliers match your filters.</td></tr>
-              ) : suppliers.map((s) => (
+              ) : filteredSuppliers.map((s: any) => (
                 <tr key={s.id} className="clickable" onClick={() => setDetail(s)}>
                   <td className="font-numeric text-ink">{s.id}</td>
                   <td className="text-ink font-medium">{s.name}</td>
@@ -188,11 +258,20 @@ export default function ContactsPage() {
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActionsMenu actions={[
                       { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(s) },
-                      { label: "Edit", icon: "ri-edit-line", onClick: () => setEditing(s) },
+                      { label: "Edit", icon: "ri-edit-line", onClick: () => {
+                        setEditing(s);
+                        setFormData({ name: s.name, email: s.email, phone: s.contact, location: s.location, status: s.status });
+                      } },
                       { label: "Record purchase", icon: "ri-arrow-down-circle-line", onClick: () => alert(`New purchase from ${s.name}`) },
                       { label: "Record payment", icon: "ri-money-dollar-circle-line", onClick: () => alert("Payment recorded") },
-                      { label: s.status === "active" ? "Deactivate" : "Activate", icon: s.status === "active" ? "ri-pause-line" : "ri-play-line", onClick: () => alert("Status toggled"), divider: true },
-                      { label: "Delete", icon: "ri-delete-bin-line", onClick: () => alert("Delete"), danger: true, divider: true },
+                      { label: s.status === "active" ? "Deactivate" : "Activate", icon: s.status === "active" ? "ri-pause-line" : "ri-play-line", onClick: () => {
+                        updateSupplier(s.id, { status: s.status === "active" ? "inactive" : "active" });
+                      }, divider: true },
+                      { label: "Delete", icon: "ri-delete-bin-line", onClick: () => {
+                        if (confirm(`Delete supplier ${s.name}?`)) {
+                          deleteSupplier(s.id);
+                        }
+                      }, danger: true, divider: true },
                     ]} />
                   </td>
                 </tr>
@@ -214,16 +293,26 @@ export default function ContactsPage() {
         </div>
         <div className="surface-flat p-3">
           <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">Avg customer spend</div>
-          <div className="font-numeric text-ink mt-0.5">{format(totalCustomerSpend / CUSTOMERS.length)}</div>
+          <div className="font-numeric text-ink mt-0.5">{format(totalCustomerSpend / (customers.length || 1))}</div>
         </div>
         <div className="surface-flat p-3">
           <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">Avg supplier delivery</div>
-          <div className="font-numeric text-ink mt-0.5">{fmtWeight(totalSupplied_g / SUPPLIERS.length)}</div>
+          <div className="font-numeric text-ink mt-0.5">{fmtWeight(totalSupplied_g / (suppliers.length || 1))}</div>
         </div>
       </div>
 
       {/* Detail modal */}
-      <ContactDetailModal contact={detail} onClose={() => setDetail(null)} format={format} />
+      <ContactDetailModal 
+        contact={detail} 
+        onClose={() => setDetail(null)} 
+        format={format} 
+        onEdit={(c) => {
+          setEditing(c);
+          setFormData({ name: c.name, email: c.email, phone: "phone" in c ? c.phone : (c as any).contact, location: c.location, status: c.status });
+          setDetail(null);
+        }}
+        onAction={(c, type) => alert(`Action ${type} for ${c.name}`)}
+      />
 
       {/* Create modal */}
       <Modal open={creating} onClose={() => setCreating(false)} size="lg"
@@ -231,7 +320,7 @@ export default function ContactsPage() {
         title={`Register a ${tab === "customers" ? "buyer" : "seller"}`}
         footer={<>
           <button className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button>
-          <button className="btn-primary" onClick={() => setCreating(false)}>
+          <button className="btn-primary" onClick={handleSave}>
             <i className="ri-check-line" /> Save & assign ID
           </button>
         </>}>
@@ -239,7 +328,7 @@ export default function ContactsPage() {
           A unique ID will be auto-generated:
           <span className="font-numeric text-ink-soft ml-1">{tab === "customers" ? "CUST-2026-NNNNNN" : "SUPP-2026-NNNNNN"}</span>
         </p>
-        <ContactForm kind={tab} />
+        <ContactForm kind={tab} formData={formData} setFormData={setFormData} />
       </Modal>
 
       {/* Edit modal */}
@@ -248,9 +337,9 @@ export default function ContactsPage() {
         title={editing?.name}
         footer={<>
           <button className="btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
-          <button className="btn-primary" onClick={() => setEditing(null)}>Save changes</button>
+          <button className="btn-primary" onClick={handleSave}>Save changes</button>
         </>}>
-        {editing && <ContactForm kind={"totalPurchases" in editing ? "customers" : "suppliers"} initial={editing} />}
+        {editing && <ContactForm kind={"totalPurchases" in editing ? "customers" : "suppliers"} initial={editing} formData={formData} setFormData={setFormData} />}
       </Modal>
 
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource={resourceLabel} rowCount={filteredCount} />
@@ -258,9 +347,70 @@ export default function ContactsPage() {
   );
 }
 
+function ContactForm({ kind, initial, formData, setFormData }: { kind: Tab; initial?: Customer | Supplier; formData: any; setFormData: (d: any) => void }) {
+  const isCustomer = kind === "customers";
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <Field label={`${isCustomer ? "Customer" : "Supplier"} ID`}>
+        <input className="input" placeholder={isCustomer ? "Auto-generated CUST-2026-NNNNNN" : "Auto-generated SUPP-2026-NNNNNN"} disabled defaultValue={initial?.id} />
+      </Field>
+      <Field label="Status">
+        <select className="input" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </Field>
+      <Field label={isCustomer ? "Customer / business name" : "Supplier / cooperative name"} full>
+        <input className="input" placeholder="Mwanza Refinery Ltd." value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+      </Field>
+      <Field label="Email">
+        <input className="input" type="email" placeholder="contact@example.tz" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+      </Field>
+      <Field label="Phone">
+        <input className="input" placeholder="+255 ..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+      </Field>
+      <Field label="Location" full>
+        <input className="input" placeholder="Region · City" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+      </Field>
+      {isCustomer ? (
+        <>
+          <Field label="Tax / TIN">
+            <input className="input" placeholder="109-204-883" />
+          </Field>
+          <Field label="Payment terms">
+            <select className="input">
+              <option>Net 7</option><option>Net 14</option><option>Net 30</option><option>On receipt</option>
+            </select>
+          </Field>
+        </>
+      ) : (
+        <>
+          <Field label="License number">
+            <input className="input" placeholder="ML-XXXXX-2024" />
+          </Field>
+          <Field label="Default purity">
+            <select className="input">
+              <option>Raw</option><option>24K</option><option>22K</option><option>18K</option>
+            </select>
+          </Field>
+        </>
+      )}
+      <Field label="Notes" full>
+        <textarea rows={2} className="input" placeholder="Optional internal notes" />
+      </Field>
+    </div>
+  );
+}
+
 function ContactDetailModal({
-  contact, onClose, format,
-}: { contact: Customer | Supplier | null; onClose: () => void; format: (n: number) => string }) {
+  contact, onClose, format, onEdit, onAction
+}: { 
+  contact: Customer | Supplier | null; 
+  onClose: () => void; 
+  format: (n: number) => string;
+  onEdit?: (c: Customer | Supplier) => void;
+  onAction?: (c: Customer | Supplier, type: string) => void;
+}) {
   if (!contact) return null;
   const isCustomer = "totalPurchases" in contact;
   const tint = isCustomer ? "#7a8c6b" : "#b8893d";
@@ -271,11 +421,11 @@ function ContactDetailModal({
       title={contact.name}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Close</button>
-        <button className="btn-secondary"><i className="ri-edit-line" />Edit</button>
+        <button className="btn-secondary" onClick={() => onEdit?.(contact)}><i className="ri-edit-line" />Edit</button>
         {isCustomer ? (
-          <button className="btn-primary"><i className="ri-file-paper-2-line" />Create invoice</button>
+          <button className="btn-primary" onClick={() => onAction?.(contact, "invoice")}><i className="ri-file-paper-2-line" />Create invoice</button>
         ) : (
-          <button className="btn-primary"><i className="ri-arrow-down-circle-line" />Record purchase</button>
+          <button className="btn-primary" onClick={() => onAction?.(contact, "purchase")}><i className="ri-arrow-down-circle-line" />Record purchase</button>
         )}
       </>}>
       {/* Hero */}
@@ -459,18 +609,5 @@ function Field({ label, children, full }: { label: string; children: React.React
       <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-1.5">{label}</div>
       {children}
     </label>
-  );
-}
-
-function Stat({ label, value, hint, icon, tone = "ink" }: { label: string; value: string; hint: string; icon: string; tone?: "ink" | "rose" | "sage" }) {
-  return (
-    <div className="surface p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</div>
-        <i className={`${icon} text-gold-600 text-base opacity-70`} />
-      </div>
-      <div className={`font-numeric text-[26px] leading-none ${tone === "rose" ? "text-rose-700" : tone === "sage" ? "text-sage-700" : "text-ink"}`}>{value}</div>
-      <div className="text-xs text-ink-muted mt-2">{hint}</div>
-    </div>
   );
 }

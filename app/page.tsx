@@ -20,6 +20,7 @@ import {
 import { useRole } from "./lib/role-context";
 import { useCurrency } from "./lib/currency-context";
 import { useDateRange } from "./lib/date-range-context";
+import { usePersistence } from "./lib/persistence-context";
 
 const QUICK_ACTIONS = [
   { label: "Record Sale", icon: "ri-arrow-up-circle-line" },
@@ -45,8 +46,17 @@ export default function Dashboard() {
   const { isAdmin } = useRole();
   const { format, formatUSD } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
-  const totalFineWeight = STOCK_BY_PURITY.reduce((a, b) => a + b.value, 0);
-  const filteredTx = EXTENDED_TX.filter((t) => inRangeFromShortDate(t.date));
+  const { transactions, inventory, cashFlow, loading, error } = usePersistence();
+
+  const totalFineWeight = inventory.reduce((a, b) => a + b.fine, 0);
+  const totalStockValue = inventory.reduce((a, b) => a + b.value, 0);
+  const totalWeight = inventory.reduce((a, b) => a + b.weight, 0);
+  
+  const filteredTx = transactions.filter((t) => inRangeFromShortDate(t.date));
+  
+  const sales = cashFlow.filter(f => f.type === 'in' && f.category.toLowerCase().includes('sale')).reduce((a, b) => a + b.amount, 0);
+  const expenses = cashFlow.filter(f => f.type === 'out').reduce((a, b) => a + b.amount, 0);
+  const cashPos = cashFlow.reduce((a, b) => a + (b.type === 'in' ? b.amount : -b.amount), 0);
 
   const [tx, setTx] = useState<typeof EXTENDED_TX[number] | null>(null);
   const [priceOpen, setPriceOpen] = useState(false);
@@ -67,15 +77,18 @@ export default function Dashboard() {
         )}
       />
 
+      {loading && <div className="surface p-8 text-center text-ink-muted mb-6"><i className="ri-loader-4-line animate-spin text-2xl" /> Syncing with backend...</div>}
+      {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-6 text-sm flex items-center gap-2"><i className="ri-error-warning-line" /> {error}</div>}
+
       {/* KPI Row — role-aware */}
       {isAdmin ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          <KpiCard label="Total Sales" value={format(KPIS.totalSales, { compact: true })} fullValue={format(KPIS.totalSales)} delta={{ value: "12.4%", positive: true }} hint="vs last month" icon="ri-arrow-right-up-line" />
-          <KpiCard label="Total Expenses" value={format(KPIS.totalExpenses, { compact: true })} fullValue={format(KPIS.totalExpenses)} delta={{ value: "4.1%", positive: false }} hint="vs last month" icon="ri-arrow-right-down-line" />
-          <KpiCard label="Net P&L" value={format(KPIS.netProfit, { compact: true })} fullValue={format(KPIS.netProfit)} delta={{ value: "18.2%", positive: true }} hint="margin 34.5%" icon="ri-scales-3-line" emphasis="gold" />
-          <KpiCard label="Gold Stock" value={fmtWeight(KPIS.stockWeight)} hint={`${(totalFineWeight / 1000).toFixed(2)} kg fine`} icon="ri-archive-stack-line" />
-          <KpiCard label="Stock Value" value={format(KPIS.stockValue, { compact: true })} fullValue={format(KPIS.stockValue)} hint={`@ ${formatUSD(GOLD_PRICE.current)}/g`} icon="ri-coin-line" />
-          <KpiCard label="Cash Position" value={format(KPIS.cashPosition, { compact: true })} fullValue={format(KPIS.cashPosition)} hint="liquid · all banks" icon="ri-wallet-3-line" />
+          <KpiCard label="Total Sales" value={format(sales, { compact: true })} fullValue={format(sales)} delta={{ value: "12.4%", positive: true }} hint="vs last month" icon="ri-arrow-right-up-line" />
+          <KpiCard label="Total Expenses" value={format(expenses, { compact: true })} fullValue={format(expenses)} delta={{ value: "4.1%", positive: false }} hint="vs last month" icon="ri-arrow-right-down-line" />
+          <KpiCard label="Net P&L" value={format(sales - expenses, { compact: true })} fullValue={format(sales - expenses)} delta={{ value: "18.2%", positive: true }} hint={`margin ${sales > 0 ? ((sales-expenses)/sales*100).toFixed(1) : 0}%`} icon="ri-scales-3-line" emphasis="gold" />
+          <KpiCard label="Gold Stock" value={fmtWeight(totalWeight)} hint={`${(totalFineWeight / 1000).toFixed(2)} kg fine`} icon="ri-archive-stack-line" />
+          <KpiCard label="Stock Value" value={format(totalStockValue, { compact: true })} fullValue={format(totalStockValue)} hint={`@ ${formatUSD(GOLD_PRICE.current)}/g`} icon="ri-coin-line" />
+          <KpiCard label="Cash Position" value={format(cashPos, { compact: true })} fullValue={format(cashPos)} hint="liquid · all banks" icon="ri-wallet-3-line" />
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -206,10 +219,10 @@ export default function Dashboard() {
             {/* Operational stats strip — fills the remaining space */}
             <div className="divider-rule my-4" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-              <MiniStat label="Available" value={`${INVENTORY_AVAILABLE_G.toFixed(0)}g`} sub="ready to sell" />
+              <MiniStat label="Available" value={fmtWeight(inventory.filter(b => b.status === 'Available').reduce((a,b)=>a+b.weight, 0))} sub="ready to sell" />
               <MiniStat label="Reserved" value="880g" sub="for open orders" />
-              <MiniStat label="Processing" value="659g" sub="at refinery" />
-              <MiniStat label="In transit" value="422g" sub="armoured shipment" />
+              <MiniStat label="Processing" value={fmtWeight(inventory.filter(b => b.status === 'Processing').reduce((a,b)=>a+b.weight, 0))} sub="at refinery" />
+              <MiniStat label="In transit" value={fmtWeight(inventory.filter(b => b.location === 'In Transit').reduce((a,b)=>a+b.weight, 0))} sub="armoured shipment" />
             </div>
           </div>
 

@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  ref         String   @unique
+  date        DateTime @default(now())
+  type        String   // Gold Sale, Gold Purchase, Op. Expense, etc.
+  party       String
+  amount      Float
+  status      String   @default("pending")
+  description String?
+  createdBy   String   @default("System")
+  
+  // Relations
+  inventoryBatches InventoryBatch[]
+  cashFlowEntries  CashFlow[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InventoryBatch {
+  id        String   @id @default(cuid())
+  batchId   String   @unique
+  weight    Float
+  karat     Float
+  fineWeight Float
+  location  String
+  status    String   @default("Available")
+  value     Float?
+  source    String?  // Reference to Transaction or Supplier
+  
+  // Relations
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  movements     Movement[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Movement {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  batchId   String
+  type      String   // Adjustment, Movement, Processing, etc.
+  before    Float
+  delta     Float
+  after     Float
+  user      String
+  reference String?  // Linked record
+  
+  batch     InventoryBatch @relation(fields: [batchId], references: [batchId])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // Customer, Supplier
+  email     String?
+  phone     String?
+  address   String?
+  status    String   @default("Active")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Site {
+  id           String   @id @default(cuid())
+  name         String
+  location     String
+  manager      String
+  capacity     Float
+  currentStock Float    @default(0)
+  security     String   @default("Standard")
+  status       String   @default("Active")
+  lastAudit    DateTime?
+  staffCount   Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CashFlow {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  type        String   // in, out
+  category    String
+  description String
+  amount      Float
+  
+  // Relations
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

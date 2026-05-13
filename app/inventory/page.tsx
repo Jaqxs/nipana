@@ -11,14 +11,12 @@ import { useCurrency } from "../lib/currency-context";
 
 type Batch = typeof INVENTORY_BATCHES[number];
 
-const MOVEMENTS = [
-  { t: "May 04 09:12", b: "BATCH-20260503-0042", m: "Purchase In", before: 0, d: +1240.5, after: 1240.5, by: "J. Assey", l: "TX-018340" },
-  { t: "May 03 17:48", b: "BATCH-20260502-0041", m: "Sale Out", before: 962.0, d: -82.0, after: 880.0, by: "M. Rweyemamu", l: "INV-2026-000482" },
-  { t: "May 03 11:02", b: "BATCH-20260430-0039", m: "Processing In", before: 658.5, d: 0, after: 658.5, by: "System", l: "Refining #224" },
-  { t: "May 02 14:33", b: "BATCH-20260501-0040", m: "Adjustment", before: 615.0, d: -2.8, after: 612.2, by: "Admin · J. Assey", l: "Reconciliation" },
-];
+// Removed hardcoded MOVEMENTS
+
+import { usePersistence } from "../lib/persistence-context";
 
 export default function InventoryPage() {
+  const { inventory, addInventoryBatch, updateInventoryBatch, movements, addMovement, loading, error } = usePersistence();
   const [tab, setTab] = useState<"batches" | "movements">("batches");
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Batch | null>(null);
@@ -28,14 +26,91 @@ export default function InventoryPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const { format, formatUSD } = useCurrency();
 
-  const totalWeight = INVENTORY_BATCHES.reduce((a, b) => a + b.weight, 0);
-  const fineWeight = INVENTORY_BATCHES.reduce((a, b) => a + b.fine, 0);
-  const totalValue = INVENTORY_BATCHES.reduce((a, b) => a + b.value, 0);
+  // New Batch Form State
+  const [newBatch, setNewBatch] = useState({
+    date: new Date().toISOString().split('T')[0],
+    weight: "",
+    karat: "24K",
+    location: "Vault A",
+    cost: "",
+    source: ""
+  });
+
+  const handleSaveBatch = () => {
+    if (!newBatch.weight || !newBatch.source) return alert("Please fill in required fields");
+    const karatVal = newBatch.karat === "Raw" ? 0 : parseInt(newBatch.karat);
+    const weightVal = parseFloat(newBatch.weight);
+    const fineVal = weightVal * (karatVal / 24);
+
+    const batchId = `BATCH-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 9000) + 1000}`;
+    addInventoryBatch({
+      batch: batchId,
+      weight: weightVal,
+      karat: karatVal,
+      fine: isNaN(fineVal) ? 0 : fineVal,
+      location: newBatch.location,
+      status: "Available",
+      value: parseFloat(newBatch.cost) || 0,
+      source: newBatch.source
+    });
+    addMovement({
+      t: new Date().toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+      b: batchId,
+      m: "Manual Entry",
+      before: 0,
+      d: weightVal,
+      after: weightVal,
+      by: "J. Assey",
+      l: newBatch.source
+    });
+    setAdding(false);
+    setNewBatch({
+      date: new Date().toISOString().split('T')[0],
+      weight: "",
+      karat: "24K",
+      location: "Vault A",
+      cost: "",
+      source: ""
+    });
+  };
+
+  const handleConfirmAction = (data?: any) => {
+    if (!confirm) return;
+    const { batch, action } = confirm;
+    const now = new Date().toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+
+    if (action === "archive") {
+      updateInventoryBatch(batch.batch, { status: "Archived" });
+    } else if (action === "move") {
+      const newLoc = data?.location || "In Transit";
+      updateInventoryBatch(batch.batch, { location: newLoc });
+      addMovement({
+        t: now, b: batch.batch, m: "Movement", before: batch.weight, d: 0, after: batch.weight, by: "J. Assey", l: `To ${newLoc}`
+      });
+    } else if (action === "refine") {
+      updateInventoryBatch(batch.batch, { status: "Processing", location: "Processing" });
+      addMovement({
+        t: now, b: batch.batch, m: "Processing In", before: batch.weight, d: 0, after: batch.weight, by: "System", l: "Sent to Refinery"
+      });
+    } else if (action === "adjust") {
+      const newWeight = parseFloat(data?.weight) || batch.weight;
+      const delta = newWeight - batch.weight;
+      updateInventoryBatch(batch.batch, { weight: newWeight, fine: (newWeight * (batch.karat / 24)) });
+      addMovement({
+        t: now, b: batch.batch, m: "Adjustment", before: batch.weight, d: delta, after: newWeight, by: "Admin · J. Assey", l: data?.reason || "Reconciliation"
+      });
+    }
+    setConfirm(null);
+  };
+
+  const totalWeight = inventory.reduce((a, b) => a + b.weight, 0);
+  const fineWeight = inventory.reduce((a, b) => a + b.fine, 0);
+  const totalValue = inventory.reduce((a, b) => a + b.value, 0);
 
   const PURITIES = ["All", "24K", "22K", "18K", "Raw"];
   const LOCATIONS = ["All", "Vault A", "Vault B", "Processing", "In Transit"];
 
-  const batches = INVENTORY_BATCHES
+  const batches = inventory
     .filter((b) => purity === "All" || (purity === "Raw" ? !b.karat : `${b.karat}K` === purity))
     .filter((b) => location === "All" || b.location === location);
 
@@ -56,11 +131,14 @@ export default function InventoryPage() {
         }
       />
 
+      {loading && <div className="surface p-8 text-center text-ink-muted mb-6"><i className="ri-loader-4-line animate-spin text-2xl" /> Syncing with backend...</div>}
+      {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg mb-6 text-sm flex items-center gap-2"><i className="ri-error-warning-line" /> {error}</div>}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="surface p-5">
           <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Total stock weight</div>
           <div className="font-numeric text-[30px] text-ink mt-2">{fmtWeight(totalWeight)}</div>
-          <div className="text-xs text-ink-muted mt-2">{INVENTORY_BATCHES.length} active batches</div>
+          <div className="text-xs text-ink-muted mt-2">{inventory.length} active batches</div>
         </div>
         <div className="surface p-5">
           <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Total fine weight</div>
@@ -129,7 +207,7 @@ export default function InventoryPage() {
                       { label: "Adjust weight", icon: "ri-edit-line", onClick: () => setConfirm({ batch: b, action: "adjust" }) },
                       { label: "Move location", icon: "ri-arrow-right-line", onClick: () => setConfirm({ batch: b, action: "move" }) },
                       { label: "Send to refinery", icon: "ri-fire-line", onClick: () => setConfirm({ batch: b, action: "refine" }) },
-                      { label: "Print certificate", icon: "ri-printer-line", onClick: () => alert("Printing"), divider: true },
+                      { label: "Print certificate", icon: "ri-printer-line", onClick: () => alert(`Printing certificate for ${b.batch}`) },
                       { label: "Archive batch", icon: "ri-archive-line", onClick: () => setConfirm({ batch: b, action: "archive" }), danger: true, divider: true },
                     ]} />
                   </td>
@@ -147,7 +225,7 @@ export default function InventoryPage() {
               <tr><th>Time</th><th>Batch</th><th>Movement</th><th>Before</th><th>Δ</th><th>After</th><th>By</th><th>Linked</th><th /></tr>
             </thead>
             <tbody>
-              {MOVEMENTS.map((r, i) => (
+              {movements.map((r: any, i: number) => (
                 <tr key={i}>
                   <td className="text-ink-muted">{r.t}</td>
                   <td className="font-numeric text-ink">{r.b}</td>
@@ -176,25 +254,25 @@ export default function InventoryPage() {
       {/* Add batch modal */}
       <Modal open={adding} onClose={() => setAdding(false)}
         eyebrow="Inventory" title="Add new batch"
-        footer={<><button className="btn-secondary" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" onClick={() => setAdding(false)}>Save batch</button></>}>
+        footer={<><button className="btn-secondary" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" onClick={handleSaveBatch}>Save batch</button></>}>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Batch ID"><input className="input" placeholder="Auto-generated BATCH-20260504-NNNN" disabled /></Field>
-          <Field label="Entry date"><input type="date" className="input" defaultValue="2026-05-04" /></Field>
-          <Field label="Weight (grams)"><input className="input" placeholder="0.000" /></Field>
+          <Field label="Entry date"><input type="date" className="input" value={newBatch.date} onChange={(e) => setNewBatch({ ...newBatch, date: e.target.value })} /></Field>
+          <Field label="Weight (grams)"><input className="input" placeholder="0.000" value={newBatch.weight} onChange={(e) => setNewBatch({ ...newBatch, weight: e.target.value })} /></Field>
           <Field label="Purity">
-            <select className="input">
+            <select className="input" value={newBatch.karat} onChange={(e) => setNewBatch({ ...newBatch, karat: e.target.value })}>
               <option>24K</option><option>22K</option><option>21K</option><option>18K</option>
               <option>14K</option><option>9K</option><option>Raw</option>
             </select>
           </Field>
           <Field label="Location">
-            <select className="input">
+            <select className="input" value={newBatch.location} onChange={(e) => setNewBatch({ ...newBatch, location: e.target.value })}>
               <option>Vault A</option><option>Vault B</option><option>Processing</option><option>In Transit</option>
             </select>
           </Field>
-          <Field label="Acquisition cost"><input className="input" placeholder="0.00" /></Field>
+          <Field label="Acquisition cost"><input className="input" placeholder="0.00" value={newBatch.cost} onChange={(e) => setNewBatch({ ...newBatch, cost: e.target.value })} /></Field>
           <Field label="Source — purchase transaction" full>
-            <input className="input" placeholder="TX-NNNNNN reference" />
+            <input className="input" placeholder="TX-NNNNNN reference" value={newBatch.source} onChange={(e) => setNewBatch({ ...newBatch, source: e.target.value })} />
           </Field>
           <Field label="Notes / quality" full>
             <textarea rows={2} className="input" placeholder="Optional assay notes" />
@@ -203,39 +281,46 @@ export default function InventoryPage() {
       </Modal>
 
       {/* Batch detail — redesigned */}
-      <BatchDetailModal batch={detail} onClose={() => setDetail(null)} format={format} formatUSD={formatUSD} />
+      <BatchDetailModal 
+        batch={detail} 
+        onClose={() => setDetail(null)} 
+        format={format} 
+        formatUSD={formatUSD}
+        onPrint={(b) => alert(`Printing certificate for ${b.batch}`)}
+        onMove={(b) => setConfirm({ batch: b, action: "move" })}
+        onAdjust={(b) => setConfirm({ batch: b, action: "adjust" })}
+      />
 
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="inventory batches" rowCount={batches.length} />
 
-      {/* Action confirmation */}
-      <Modal open={!!confirm} onClose={() => setConfirm(null)}
-        eyebrow={confirm?.action} title={confirm ? `${confirm.action[0].toUpperCase() + confirm.action.slice(1)} ${confirm.batch.batch}?` : ""}
-        footer={<><button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button><button className="btn-primary" onClick={() => setConfirm(null)}>Confirm</button></>}>
-        <p className="text-sm text-ink-soft">A movement log entry will be created with full attribution.</p>
-      </Modal>
+      {/* Action confirmation & Real Inputs */}
+      <InventoryActionModal confirm={confirm} onClose={() => setConfirm(null)} onConfirm={handleConfirmAction} />
     </div>
   );
 }
 
-function BatchDetailModal({ batch, onClose, format, formatUSD }: {
+function BatchDetailModal({ batch, onClose, format, formatUSD, onPrint, onMove, onAdjust }: {
   batch: Batch | null;
   onClose: () => void;
   format: (n: number) => string;
   formatUSD: (n: number) => string;
+  onPrint?: (b: Batch) => void;
+  onMove?: (b: Batch) => void;
+  onAdjust?: (b: Batch) => void;
 }) {
   if (!batch) return null;
   const finePct = batch.weight > 0 ? (batch.fine / batch.weight) * 100 : 0;
   const alloyWeight = batch.weight - batch.fine;
-  const movements = MOVEMENTS.filter((m) => m.b === batch.batch);
+  const batchMovements = movements.filter((m: any) => m.b === batch.batch);
 
   return (
     <Modal open={!!batch} onClose={onClose} size="xl"
       eyebrow="Batch" title={batch.batch}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Close</button>
-        <button className="btn-secondary"><i className="ri-printer-line" />Print certificate</button>
-        <button className="btn-secondary"><i className="ri-arrow-right-line" />Move location</button>
-        <button className="btn-primary"><i className="ri-edit-line" />Adjust</button>
+        <button className="btn-secondary" onClick={() => onPrint?.(batch)}><i className="ri-printer-line" />Print certificate</button>
+        <button className="btn-secondary" onClick={() => onMove?.(batch)}><i className="ri-arrow-right-line" />Move location</button>
+        <button className="btn-primary" onClick={() => onAdjust?.(batch)}><i className="ri-edit-line" />Adjust</button>
       </>}>
       {/* Hero */}
       <div className="surface-flat p-5 mb-5 flex items-start gap-5">
@@ -319,9 +404,9 @@ function BatchDetailModal({ batch, onClose, format, formatUSD }: {
                   <tr><th>When</th><th>Type</th><th>Δ</th><th>By</th><th>Linked</th></tr>
                 </thead>
                 <tbody>
-                  {movements.length === 0 ? (
+                  {batchMovements.length === 0 ? (
                     <tr><td colSpan={5} className="text-center text-ink-faint py-6">No movements recorded.</td></tr>
-                  ) : movements.map((m, i) => (
+                  ) : batchMovements.map((m: any, i: number) => (
                     <tr key={i}>
                       <td className="text-ink-muted">{m.t}</td>
                       <td>{m.m}</td>
@@ -381,5 +466,56 @@ function Field({ label, children, full }: { label: string; children: React.React
       <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-1.5">{label}</div>
       {children}
     </label>
+  );
+}
+
+function InventoryActionModal({ confirm, onClose, onConfirm }: { confirm: any; onClose: () => void; onConfirm: (data?: any) => void }) {
+  const [data, setData] = useState<any>({});
+  if (!confirm) return null;
+
+  const isAdjust = confirm.action === "adjust";
+  const isMove = confirm.action === "move";
+  const isRefine = confirm.action === "refine";
+  const isArchive = confirm.action === "archive";
+
+  return (
+    <Modal open={!!confirm} onClose={onClose}
+      eyebrow={confirm.action} title={`${confirm.action[0].toUpperCase() + confirm.action.slice(1)} ${confirm.batch.batch}`}
+      footer={<><button className="btn-secondary" onClick={onClose}>Cancel</button><button className="btn-primary" onClick={() => onConfirm(data)}>Confirm</button></>}>
+      <div className="space-y-4">
+        {isAdjust && (
+          <>
+            <Field label="New weight (grams)">
+              <input type="number" className="input" placeholder={confirm.batch.weight.toString()} onChange={(e) => setData({ ...data, weight: e.target.value })} />
+            </Field>
+            <Field label="Adjustment reason">
+              <select className="input" onChange={(e) => setData({ ...data, reason: e.target.value })}>
+                <option>Reconciliation</option>
+                <option>Assay Correction</option>
+                <option>Scale Recalibration</option>
+                <option>Moisture Loss</option>
+              </select>
+            </Field>
+          </>
+        )}
+        {isMove && (
+          <Field label="Target location">
+            <select className="input" onChange={(e) => setData({ ...data, location: e.target.value })}>
+              <option>Vault A</option>
+              <option>Vault B</option>
+              <option>Processing</option>
+              <option>In Transit</option>
+              <option>Refinery</option>
+            </select>
+          </Field>
+        )}
+        {(isRefine || isArchive) && (
+          <p className="text-sm text-ink-soft">
+            {isRefine ? "This will mark the batch as 'Processing' and move it to the refinery queue." : "This will remove the batch from active inventory and archive it for record-keeping."}
+          </p>
+        )}
+        <p className="text-[10px] text-ink-faint uppercase tracking-wider mt-2">Logged by Julius Assey · System Audit Trail Active</p>
+      </div>
+    </Modal>
   );
 }
