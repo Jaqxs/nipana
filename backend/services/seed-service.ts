@@ -30,12 +30,12 @@ export const seedService = {
     // 3. Seed Contacts
     for (const c of mock.CUSTOMERS) {
       await prisma.contact.create({
-        data: { name: c.name, type: "Customer", email: c.email, status: "Active" }
+        data: { name: c.name, type: "Customer", email: c.email, phone: c.phone, status: "Active" }
       });
     }
     for (const s of mock.SUPPLIERS) {
       await prisma.contact.create({
-        data: { name: s.name, type: "Supplier", phone: s.phone, status: "Active" }
+        data: { name: s.name, type: "Supplier", phone: s.contact, status: "Active" }
       });
     }
 
