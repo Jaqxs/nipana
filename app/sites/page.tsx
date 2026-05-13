@@ -151,7 +151,7 @@ export default function SitesPage() {
                     </div>
                   </td>
                   <td className="text-right font-numeric text-ink font-medium">{s.currentStock.toFixed(2)}</td>
-                  <td><Badge tone={s.status === "Active" ? "sage" : s.status === "Maintenance" ? "gold" : "terracotta"} dot>{s.status}</Badge></td>
+                  <td><Badge tone={s.status === "Active" ? "sage" : s.status === "Maintenance" ? "amber" : "terracotta"} dot>{s.status}</Badge></td>
                   <td className="text-right">
                     <RowActionsMenu actions={[
                       { label: "Edit details", icon: "ri-edit-line", onClick: () => {
