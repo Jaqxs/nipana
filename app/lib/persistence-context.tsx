@@ -11,6 +11,8 @@ interface PersistenceContextType {
   cashFlow: any[];
   sites: any[];
   movements: any[];
+  invoices: any[];
+  quotations: any[];
   loading: boolean;
   error: string | null;
   addTransaction: (tx: any) => void;
@@ -28,6 +30,10 @@ interface PersistenceContextType {
   addSite: (site: any) => void;
   updateSite: (id: string, updates: any) => void;
   addMovement: (movement: any) => void;
+  addInvoice: (invoice: any) => void;
+  updateInvoice: (id: string, updates: any) => void;
+  addQuotation: (quotation: any) => void;
+  updateQuotation: (id: string, updates: any) => void;
   refreshData: () => Promise<void>;
 }
 
@@ -41,6 +47,8 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   const [flows, setFlows] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [quotations, setQuotations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,12 +56,14 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       // Try to fetch from backend
-      const [txs, inv, flows, cts, sts] = await Promise.all([
+      const [txs, inv, flows, cts, sts, invs, qts] = await Promise.all([
         backendClient.get("transactions"),
         backendClient.get("inventory"),
         backendClient.get("cash-flow"),
         backendClient.get("contacts"),
         backendClient.get("sites"),
+        backendClient.get("invoices"),
+        backendClient.get("quotations"),
       ]);
       
       setTransactions(txs.length ? txs : [...mock.RECENT_TX]);
@@ -62,6 +72,8 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
       setCustomers(cts.filter((c: any) => c.type === "Customer").length ? cts.filter((c: any) => c.type === "Customer") : [...mock.CUSTOMERS]);
       setSuppliers(cts.filter((c: any) => c.type === "Supplier").length ? cts.filter((c: any) => c.type === "Supplier") : [...mock.SUPPLIERS]);
       setSites(sts.length ? sts : [...mock.SITES]);
+      setInvoices(invs.length ? invs : []);
+      setQuotations(qts.length ? qts : []);
       setError(null);
     } catch (err: any) {
       console.warn("Backend unavailable, falling back to Safe Mode (Local State)", err);
@@ -77,24 +89,33 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addTransaction = async (tx: any) => {
-    setTransactions(prev => [tx, ...prev]);
-    try { await backendClient.post("transactions", tx); } catch (e) { console.error(e); }
+    try {
+      const saved = await backendClient.post("transactions", tx);
+      setTransactions(prev => [saved, ...prev]);
+    } catch (e: any) {
+      console.error(e);
+      const msg = e.message || "Please check your connection.";
+      alert(`Failed to record transaction: ${msg}`);
+    }
   };
   const updateTransaction = async (ref: string, updates: any) => {
     setTransactions(prev => prev.map(t => t.ref === ref ? { ...t, ...updates } : t));
-    // Implementation for specific ID update needed if using REST properly
+    try { await backendClient.patch(`transactions/${ref}`, updates); } catch (e) { console.error(e); }
   };
   const deleteTransaction = async (ref: string) => {
-    setTransactions(prev => prev.filter(t => t.ref !== ref));
+    try {
+      await backendClient.delete(`transactions/${ref}`);
+      setTransactions(prev => prev.filter(t => t.ref !== ref));
+    } catch (e) { console.error(e); }
   };
 
   const addInventoryBatch = async (batch: any) => {
     setInventory(prev => [batch, ...prev]);
     try { await backendClient.post("inventory", batch); } catch (e) { console.error(e); }
   };
-  const updateInventoryBatch = async (id: string, updates: any) => {
-    setInventory(prev => prev.map(b => b.batch === id ? { ...b, ...updates } : b));
-    try { await backendClient.patch("inventory", id, updates); } catch (e) { console.error(e); }
+  const updateInventoryBatch = async (batchId: string, updates: any) => {
+    setInventory(prev => prev.map(b => (b.batchId === batchId || b.batch === batchId) ? { ...b, ...updates } : b));
+    try { await backendClient.patch("inventory", batchId, updates); } catch (e) { console.error(e); }
   };
 
   const addCustomer = async (customer: any) => {
@@ -124,8 +145,13 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   };
 
   const addCashFlow = async (entry: any) => {
-    setFlows(prev => [entry, ...prev]);
-    try { await backendClient.post("cash-flow", entry); } catch (e) { console.error(e); }
+    try {
+      const saved = await backendClient.post("cash-flow", entry);
+      setFlows(prev => [saved, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to record cash flow entry.");
+    }
   };
 
   const addSite = async (site: any) => {
@@ -139,7 +165,44 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
 
   const addMovement = async (m: any) => {
     setMovements(prev => [m, ...prev]);
-    // In backend, movements are created automatically by inventory updates or via inventoryService.addMovement
+    try {
+      await backendClient.post("inventory/movements", {
+        batchId: m.b || m.batchId,
+        type: m.m || m.type,
+        before: m.before,
+        delta: m.d || m.delta,
+        after: m.after,
+        user: m.by || m.user || "System",
+        reference: m.l || m.reference
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  const addInvoice = async (inv: any) => {
+    try {
+      const saved = await backendClient.post("invoices", inv);
+      setInvoices(prev => [saved, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create invoice.");
+    }
+  };
+  const updateInvoice = async (id: string, updates: any) => {
+    setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    try { await backendClient.patch("invoices", id, updates); } catch (e) { console.error(e); }
+  };
+  const addQuotation = async (q: any) => {
+    try {
+      const saved = await backendClient.post("quotations", q);
+      setQuotations(prev => [saved, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create quotation.");
+    }
+  };
+  const updateQuotation = async (id: string, updates: any) => {
+    setQuotations(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+    try { await backendClient.patch("quotations", id, updates); } catch (e) { console.error(e); }
   };
 
   return (
@@ -166,6 +229,12 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
       updateSite,
       movements,
       addMovement,
+      invoices,
+      addInvoice,
+      updateInvoice,
+      quotations,
+      addQuotation,
+      updateQuotation,
       loading,
       error,
       refreshData,

@@ -13,10 +13,10 @@ export const inventoryService = {
   async create(data: any) {
     return await prisma.inventoryBatch.create({
       data: {
-        batchId: data.batchId,
+        batchId: data.batch || data.batchId,
         weight: data.weight,
         karat: data.karat,
-        fineWeight: data.fineWeight,
+        fineWeight: data.fine || data.fineWeight,
         location: data.location,
         status: data.status || "Available",
         value: data.value,
@@ -26,13 +26,16 @@ export const inventoryService = {
     });
   },
 
-  async update(id: string, data: any) {
+  async update(idOrBatchId: string, data: any) {
     return await prisma.$transaction(async (tx) => {
-      const oldBatch = await tx.inventoryBatch.findUnique({ where: { id } });
+      let oldBatch = await tx.inventoryBatch.findUnique({ where: { id: idOrBatchId } });
+      if (!oldBatch) {
+        oldBatch = await tx.inventoryBatch.findUnique({ where: { batchId: idOrBatchId } });
+      }
       if (!oldBatch) throw new Error("Batch not found");
 
       const batch = await tx.inventoryBatch.update({
-        where: { id },
+        where: { id: oldBatch.id },
         data
       });
 

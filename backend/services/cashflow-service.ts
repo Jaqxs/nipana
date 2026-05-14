@@ -13,7 +13,7 @@ export const cashflowService = {
         date: new Date(data.date),
         type: data.type,
         category: data.category,
-        description: data.description,
+        description: data.description || data.desc || "N/A",
         amount: data.amount,
         transactionId: data.transactionId,
       }

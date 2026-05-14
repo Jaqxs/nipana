@@ -26,14 +26,20 @@ export const transactionService = {
     });
   },
 
-  async update(id: string, data: any) {
+  async update(idOrRef: string, data: any) {
     return await prisma.$transaction(async (tx) => {
-      const existingTx = await tx.transaction.findUnique({ where: { id } });
+      let existingTx = await tx.transaction.findUnique({ where: { id: idOrRef } });
+      if (!existingTx) {
+        existingTx = await tx.transaction.findUnique({ where: { ref: idOrRef } });
+      }
       if (!existingTx) throw new Error("Transaction not found");
 
       const transaction = await tx.transaction.update({
-        where: { id },
-        data
+        where: { id: existingTx.id },
+        data: {
+          ...data,
+          date: data.date ? new Date(data.date) : undefined
+        }
       });
 
       // Coordination Logic: If transaction is confirmed and was not confirmed before
@@ -61,7 +67,7 @@ export const transactionService = {
             type: transaction.type === "Gold Sale" ? "in" : "out",
             category: transaction.type,
             description: `Linked to ${transaction.ref}`,
-            amount: transaction.amount,
+            amount: Math.abs(transaction.amount),
             transactionId: transaction.id
           }
         });
@@ -71,9 +77,15 @@ export const transactionService = {
     });
   },
 
-  async delete(id: string) {
+  async delete(idOrRef: string) {
+    let existingTx = await prisma.transaction.findUnique({ where: { id: idOrRef } });
+    if (!existingTx) {
+      existingTx = await prisma.transaction.findUnique({ where: { ref: idOrRef } });
+    }
+    if (!existingTx) throw new Error("Transaction not found");
+
     return await prisma.transaction.delete({
-      where: { id }
+      where: { id: existingTx.id }
     });
   }
 };

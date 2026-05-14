@@ -13,7 +13,10 @@ export const backendClient = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Failed to create ${resource}`);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to create ${resource}`);
+    }
     return res.json();
   },
 

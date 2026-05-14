@@ -6,6 +6,7 @@ import { Modal } from "../components/Modal";
 import { RowActionsMenu } from "../components/RowActionsMenu";
 import { ExportModal } from "../components/ExportModal";
 import { Stat } from "../components/Stat";
+import { useRouter } from "next/navigation";
 import { fmtWeight, Customer, Supplier } from "../lib/mockData";
 import { useCurrency } from "../lib/currency-context";
 import { usePersistence } from "../lib/persistence-context";
@@ -13,6 +14,7 @@ import { usePersistence } from "../lib/persistence-context";
 type Tab = "customers" | "suppliers";
 
 export default function ContactsPage() {
+  const router = useRouter();
   const { 
     customers, suppliers, 
     addCustomer, updateCustomer, deleteCustomer,
@@ -26,6 +28,17 @@ export default function ContactsPage() {
   const [detail, setDetail] = useState<Customer | Supplier | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const { format } = useCurrency();
+
+  const handleAction = (c: Customer | Supplier, type: string) => {
+    if (type === "invoice") {
+      router.push(`/invoices?new=true&customer=${encodeURIComponent(c.name)}`);
+    } else if (type === "quotation") {
+      router.push(`/quotations?new=true&customer=${encodeURIComponent(c.name)}`);
+    } else if (type === "purchase") {
+      router.push(`/transactions?new=true&type=Gold+Purchase&party=${encodeURIComponent(c.name)}`);
+    }
+    setDetail(null);
+  };
 
   // Form State for Create/Edit
   const [formData, setFormData] = useState<any>({
@@ -311,7 +324,7 @@ export default function ContactsPage() {
           setFormData({ name: c.name, email: c.email, phone: "phone" in c ? c.phone : (c as any).contact, location: c.location, status: c.status });
           setDetail(null);
         }}
-        onAction={(c, type) => alert(`Action ${type} for ${c.name}`)}
+        onAction={handleAction}
       />
 
       {/* Create modal */}
@@ -423,7 +436,10 @@ function ContactDetailModal({
         <button className="btn-secondary" onClick={onClose}>Close</button>
         <button className="btn-secondary" onClick={() => onEdit?.(contact)}><i className="ri-edit-line" />Edit</button>
         {isCustomer ? (
-          <button className="btn-primary" onClick={() => onAction?.(contact, "invoice")}><i className="ri-file-paper-2-line" />Create invoice</button>
+          <>
+            <button className="btn-secondary" onClick={() => onAction?.(contact, "quotation")}><i className="ri-file-list-3-line" />Create quotation</button>
+            <button className="btn-primary" onClick={() => onAction?.(contact, "invoice")}><i className="ri-file-paper-2-line" />Create invoice</button>
+          </>
         ) : (
           <button className="btn-primary" onClick={() => onAction?.(contact, "purchase")}><i className="ri-arrow-down-circle-line" />Record purchase</button>
         )}

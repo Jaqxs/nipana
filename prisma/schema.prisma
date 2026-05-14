@@ -104,3 +104,56 @@ model CashFlow {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+model Invoice {
+  id          String   @id @default(cuid())
+  no          String   @unique
+  customer    String
+  issued      DateTime
+  due         DateTime
+  amount      Float
+  status      String   @default("Draft") // Draft, Pending, Sent, Paid, Overdue
+  notes       String?
+  
+  items       InvoiceItem[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  description String
+  weight      Float?
+  karat       String?
+  price       Float
+  
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Quotation {
+  id          String   @id @default(cuid())
+  no          String   @unique
+  customer    String
+  date        DateTime @default(now())
+  expiry      DateTime
+  amount      Float
+  status      String   @default("Draft") // Draft, Sent, Accepted, Rejected, Expired
+  notes       String?
+  
+  items       QuotationItem[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuotationItem {
+  id          String   @id @default(cuid())
+  description String
+  weight      Float?
+  karat       String?
+  price       Float
+  
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}

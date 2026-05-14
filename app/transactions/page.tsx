@@ -10,25 +10,15 @@ import { RECENT_TX } from "../lib/mockData";
 import { useCurrency } from "../lib/currency-context";
 import { useDateRange } from "../lib/date-range-context";
 
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { usePersistence } from "../lib/persistence-context";
+
 const TYPES = ["All", "Gold Sale", "Gold Purchase", "Op. Expense", "Processing", "Logistics", "Cash Inflow", "Cash Outflow"];
 const STATUS = ["All", "Pending", "Confirmed", "Rejected"];
 
-interface Tx { ref: string; date: string; type: string; party: string; amount: number; status: string; }
-
-const ROWS: Tx[] = [
-  ...RECENT_TX,
-  { ref: "TX-018336", date: "May 02", type: "Cash Inflow", party: "Investor — Amir K.", amount: 50_000, status: "confirmed" },
-  { ref: "TX-018335", date: "May 01", type: "Gold Sale", party: "Sukuma Gold Co.", amount: 12_400, status: "confirmed" },
-  { ref: "TX-018334", date: "Apr 30", type: "Op. Expense", party: "Office rent — May", amount: -2_800, status: "confirmed" },
-  { ref: "TX-018333", date: "Apr 30", type: "Logistics", party: "Insurance — Q2", amount: -3_200, status: "rejected" },
-  { ref: "TX-018332", date: "Apr 28", type: "Op. Expense", party: "Vault security — May", amount: -1_240, status: "confirmed" },
-  { ref: "TX-018331", date: "Apr 26", type: "Gold Sale", party: "Coastal Buyers", amount: 11_300, status: "confirmed" },
-  { ref: "TX-018330", date: "Apr 24", type: "Processing", party: "Refining Batch #223", amount: -2_100, status: "confirmed" },
-];
-
-import { usePersistence } from "../lib/persistence-context";
-
 export default function TransactionsPage() {
+  const searchParams = useSearchParams();
   const { 
     transactions, addTransaction, updateTransaction, deleteTransaction,
     addInventoryBatch, addCashFlow, loading, error
@@ -43,6 +33,30 @@ export default function TransactionsPage() {
   const [confirming, setConfirming] = useState<{ tx: any; action: string } | null>(null);
   const { format } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      setCreating(true);
+      setNewTx({
+        date: new Date().toISOString().split('T')[0],
+        type: searchParams.get("type") || "Gold Sale",
+        amount: "",
+        currency: "USD",
+        party: searchParams.get("party") || "",
+        description: ""
+      });
+    }
+  }, [searchParams]);
 
   // New Transaction Form State
   const [newTx, setNewTx] = useState({
@@ -60,7 +74,7 @@ export default function TransactionsPage() {
     
     if (editing) {
       updateTransaction(editing.ref, {
-        date: new Date(newTx.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+        date: newTx.date,
         type: newTx.type,
         party: newTx.party,
         amount: amount,
@@ -69,7 +83,7 @@ export default function TransactionsPage() {
     } else {
       addTransaction({
         ref: `TX-${Math.floor(Math.random() * 90000) + 10000}`,
-        date: new Date(newTx.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+        date: newTx.date,
         type: newTx.type,
         party: newTx.party,
         amount: amount,
@@ -207,7 +221,7 @@ export default function TransactionsPage() {
             ) : filtered.map((t) => (
               <tr key={t.ref} className="clickable" onClick={() => setDetail(t)}>
                 <td className="font-numeric text-ink">{t.ref}</td>
-                <td className="text-ink-muted">{t.date}</td>
+                <td className="text-ink-muted">{formatDate(t.date)}</td>
                 <td>{t.type}</td>
                 <td className="text-ink-soft">{t.party}</td>
                 <td className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
@@ -221,7 +235,7 @@ export default function TransactionsPage() {
                     { label: "Edit", icon: "ri-edit-line", onClick: () => {
                       setEditing(t);
                       setNewTx({
-                        date: new Date().toISOString().split('T')[0], // Placeholder for date parsing
+                        date: t.date.includes("-") ? t.date : new Date().toISOString().split('T')[0],
                         type: t.type,
                         amount: Math.abs(t.amount).toString(),
                         currency: "USD",

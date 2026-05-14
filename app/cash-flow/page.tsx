@@ -59,11 +59,21 @@ export default function CashFlowPage() {
     description: ""
   });
 
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    } catch {
+      return dateStr;
+    }
+  };
+
   const handleSave = () => {
     if (!formData.amount || !formData.category) return alert("Amount and Category are required");
     
     addCashFlow({
-      date: new Date(formData.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+      date: formData.date,
       type: adding,
       category: formData.category,
       desc: formData.payee || formData.description,
@@ -149,7 +159,7 @@ export default function CashFlowPage() {
               <tr><td colSpan={6} className="text-center text-ink-faint py-12">No cash flow entries in this date range.</td></tr>
             ) : flows.map((f, i) => (
               <tr key={i} className="clickable" onClick={() => setDetail(f)}>
-                <td className="text-ink-muted">{f.date}</td>
+                <td className="text-ink-muted">{formatDate(f.date)}</td>
                 <td>
                   <span className={`inline-flex items-center gap-1.5 ${f.type === "in" ? "text-sage-700" : "text-rose-700"}`}>
                     <i className={f.type === "in" ? "ri-arrow-down-line" : "ri-arrow-up-line"} />

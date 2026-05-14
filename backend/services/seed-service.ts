@@ -55,6 +55,46 @@ export const seedService = {
       });
     }
 
+    // 5. Seed Invoices
+    const existingInvoices = await prisma.invoice.count();
+    if (existingInvoices === 0) {
+      await prisma.invoice.create({
+        data: {
+          no: "INV-2026-10001",
+          customer: "Mwanza Refinery Ltd.",
+          issued: new Date("2026-05-01"),
+          due: new Date("2026-05-08"),
+          amount: 18400,
+          status: "Pending",
+          items: {
+            create: [
+              { description: "Refined Gold 24K", weight: 250, karat: "24K", price: 73.6 }
+            ]
+          }
+        }
+      });
+    }
+
+    // 6. Seed Quotations
+    const existingQuotations = await prisma.quotation.count();
+    if (existingQuotations === 0) {
+      await prisma.quotation.create({
+        data: {
+          no: "QTN-2026-50001",
+          customer: "Coastal Buyers",
+          date: new Date("2026-05-10"),
+          expiry: new Date("2026-05-17"),
+          amount: 12500,
+          status: "DRAFT",
+          items: {
+            create: [
+              { description: "Gold Bullion 22K", weight: 200, karat: "22K", price: 62.5 }
+            ]
+          }
+        }
+      });
+    }
+
     return { success: true };
   }
 };
