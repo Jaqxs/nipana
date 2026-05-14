@@ -13,9 +13,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
+    console.log("POST /api/transactions - Incoming Data:", data);
     const transaction = await transactionService.create(data);
+    console.log("POST /api/transactions - Success:", transaction.ref);
     return NextResponse.json(transaction, { status: 201 });
   } catch (error: any) {
+    console.error("POST /api/transactions - Error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
