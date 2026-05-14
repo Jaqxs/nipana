@@ -123,12 +123,12 @@ export default function InvoicesPage() {
               <tr><td colSpan={7} className="text-center text-ink-faint py-12">No invoices match your filters.</td></tr>
             ) : filtered.map((i) => (
               <tr key={i.no} className="clickable" onClick={() => setPreview(i)}>
-                <td className="font-numeric text-ink">{i.no}</td>
-                <td className="text-ink-soft">{i.customer}</td>
-                <td className="text-ink-muted">{i.issued}</td>
-                <td className="text-ink-muted">{i.due}</td>
-                <td className="text-right font-numeric text-ink">{format(i.amount)}</td>
-                <td><Badge tone={statusToTone(i.status)}>{i.status}</Badge></td>
+                <td data-label="Invoice" className="font-numeric text-ink">{i.no}</td>
+                <td data-label="Customer" className="text-ink-soft">{i.customer}</td>
+                <td data-label="Issued" className="text-ink-muted">{i.issued}</td>
+                <td data-label="Due" className="text-ink-muted">{i.due}</td>
+                <td data-label="Amount" className="text-right font-numeric text-ink">{format(i.amount)}</td>
+                <td data-label="Status"><Badge tone={statusToTone(i.status)}>{i.status}</Badge></td>
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View invoice", icon: "ri-eye-line", onClick: () => setPreview(i) },

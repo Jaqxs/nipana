@@ -66,19 +66,18 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
         backendClient.get("quotations"),
       ]);
       
-      setTransactions(txs.length ? txs : [...mock.RECENT_TX]);
-      setInventory(inv.length ? inv : [...mock.INVENTORY_BATCHES]);
-      setFlows(flows.length ? flows : [...mock.CASH_FLOW]);
-      setCustomers(cts.filter((c: any) => c.type === "Customer").length ? cts.filter((c: any) => c.type === "Customer") : [...mock.CUSTOMERS]);
-      setSuppliers(cts.filter((c: any) => c.type === "Supplier").length ? cts.filter((c: any) => c.type === "Supplier") : [...mock.SUPPLIERS]);
-      setSites(sts.length ? sts : [...mock.SITES]);
-      setInvoices(invs.length ? invs : []);
-      setQuotations(qts.length ? qts : []);
+      setTransactions(txs || []);
+      setInventory(inv || []);
+      setFlows(flows || []);
+      setCustomers((cts || []).filter((c: any) => c.type === "Customer"));
+      setSuppliers((cts || []).filter((c: any) => c.type === "Supplier"));
+      setSites(sts || []);
+      setInvoices(invs || []);
+      setQuotations(qts || []);
       setError(null);
     } catch (err: any) {
-      console.warn("Backend unavailable, falling back to Safe Mode (Local State)", err);
-      setError("Backend connection failed. Using local storage mode.");
-      // Keep mock data
+      console.error("Backend connection failed:", err);
+      setError("Backend connection failed. Please check your database settings.");
     } finally {
       setLoading(false);
     }

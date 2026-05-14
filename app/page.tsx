@@ -31,15 +31,9 @@ const QUICK_ACTIONS = [
   { label: "Adjust Stock", icon: "ri-archive-line" },
 ];
 
-const INVENTORY_AVAILABLE_G = 2257.5;
+const INVENTORY_AVAILABLE_G = 0;
 
-const EXTENDED_TX = [
-  ...RECENT_TX,
-  { ref: "TX-018336", date: "May 02", type: "Cash Inflow", party: "Investor — Amir K.", amount: 50_000, status: "confirmed" },
-  { ref: "TX-018335", date: "May 01", type: "Gold Sale", party: "Sukuma Gold Co.", amount: 12_400, status: "confirmed" },
-  { ref: "TX-018334", date: "Apr 30", type: "Op. Expense", party: "Office rent — May", amount: -2_800, status: "confirmed" },
-  { ref: "TX-018333", date: "Apr 30", type: "Logistics", party: "Insurance — Q2", amount: -3_200, status: "rejected" },
-];
+const EXTENDED_TX: any[] = [];
 
 export default function Dashboard() {
   const router = useRouter();
@@ -83,20 +77,20 @@ export default function Dashboard() {
       {/* KPI Row — role-aware */}
       {isAdmin ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          <KpiCard label="Total Sales" value={format(sales, { compact: true })} fullValue={format(sales)} delta={{ value: "12.4%", positive: true }} hint="vs last month" icon="ri-arrow-right-up-line" />
-          <KpiCard label="Total Expenses" value={format(expenses, { compact: true })} fullValue={format(expenses)} delta={{ value: "4.1%", positive: false }} hint="vs last month" icon="ri-arrow-right-down-line" />
-          <KpiCard label="Net P&L" value={format(sales - expenses, { compact: true })} fullValue={format(sales - expenses)} delta={{ value: "18.2%", positive: true }} hint={`margin ${sales > 0 ? ((sales-expenses)/sales*100).toFixed(1) : 0}%`} icon="ri-scales-3-line" emphasis="gold" />
+          <KpiCard label="Total Sales" value={format(sales, { compact: true })} fullValue={format(sales)} delta={{ value: "—", positive: true }} hint="live data" icon="ri-arrow-right-up-line" />
+          <KpiCard label="Total Expenses" value={format(expenses, { compact: true })} fullValue={format(expenses)} delta={{ value: "—", positive: false }} hint="live data" icon="ri-arrow-right-down-line" />
+          <KpiCard label="Net P&L" value={format(sales - expenses, { compact: true })} fullValue={format(sales - expenses)} delta={{ value: "—", positive: true }} hint={`margin ${sales > 0 ? ((sales-expenses)/sales*100).toFixed(1) : 0}%`} icon="ri-scales-3-line" emphasis="gold" />
           <KpiCard label="Gold Stock" value={fmtWeight(totalWeight)} hint={`${(totalFineWeight / 1000).toFixed(2)} kg fine`} icon="ri-archive-stack-line" />
           <KpiCard label="Stock Value" value={format(totalStockValue, { compact: true })} fullValue={format(totalStockValue)} hint={`@ ${formatUSD(GOLD_PRICE.current)}/g`} icon="ri-coin-line" />
           <KpiCard label="Cash Position" value={format(cashPos, { compact: true })} fullValue={format(cashPos)} hint="liquid · all banks" icon="ri-wallet-3-line" />
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          <KpiCard label="Gold Sold" value={fmtWeight(GOLD_FLOW.sold.weight_g)} hint={`${GOLD_FLOW.sold.count} sales · ${rangeLabel}`} icon="ri-arrow-up-circle-line" />
-          <KpiCard label="Gold Purchased" value={fmtWeight(GOLD_FLOW.purchased.weight_g)} hint={`${GOLD_FLOW.purchased.count} buys · ${rangeLabel}`} icon="ri-arrow-down-circle-line" />
-          <KpiCard label="Gold Stock" value={fmtWeight(KPIS.stockWeight)} hint={`${(totalFineWeight / 1000).toFixed(2)} kg fine`} icon="ri-archive-stack-line" />
-          <KpiCard label="My Submissions" value="42" hint="this month · 95% approved" icon="ri-quill-pen-line" />
-          <KpiCard label="My Invoices" value={`${KPIS.pendingInvoices.count}`} hint={`${KPIS.pendingInvoices.count} pending`} icon="ri-file-paper-2-line" />
+          <KpiCard label="Gold Sold" value={fmtWeight(0)} hint={`0 sales · ${rangeLabel}`} icon="ri-arrow-up-circle-line" />
+          <KpiCard label="Gold Purchased" value={fmtWeight(0)} hint={`0 buys · ${rangeLabel}`} icon="ri-arrow-down-circle-line" />
+          <KpiCard label="Gold Stock" value={fmtWeight(totalWeight)} hint={`${(totalFineWeight / 1000).toFixed(2)} kg fine`} icon="ri-archive-stack-line" />
+          <KpiCard label="My Submissions" value={`${transactions.length}`} hint="this month" icon="ri-quill-pen-line" />
+          <KpiCard label="My Invoices" value="0" hint="0 pending" icon="ri-file-paper-2-line" />
           <KpiCard label="Active Gold Price" value={`$${GOLD_PRICE.current.toFixed(2)}/g`} hint="USD · spot" icon="ri-coin-line" emphasis="gold" />
         </div>
       )}
@@ -108,11 +102,11 @@ export default function Dashboard() {
           icon="ri-arrow-up-circle-line"
           label="Gold Sold"
           rangeLabel={rangeLabel}
-          weight={GOLD_FLOW.sold.weight_g}
-          value={GOLD_FLOW.sold.value_usd}
-          count={GOLD_FLOW.sold.count}
-          avgPrice={GOLD_FLOW.sold.avgPricePerGram}
-          spark={GOLD_FLOW.sold.spark}
+          weight={transactions.filter(t => t.type === 'Gold Sale').reduce((a, b) => a + (Math.abs(b.amount) / 74), 0)}
+          value={transactions.filter(t => t.type === 'Gold Sale').reduce((a, b) => a + Math.abs(b.amount), 0)}
+          count={transactions.filter(t => t.type === 'Gold Sale').length}
+          avgPrice={74.05}
+          spark={[]}
           format={format}
           formatUSD={formatUSD}
           showValue={isAdmin}
@@ -122,11 +116,11 @@ export default function Dashboard() {
           icon="ri-arrow-down-circle-line"
           label="Gold Purchased"
           rangeLabel={rangeLabel}
-          weight={GOLD_FLOW.purchased.weight_g}
-          value={GOLD_FLOW.purchased.value_usd}
-          count={GOLD_FLOW.purchased.count}
-          avgPrice={GOLD_FLOW.purchased.avgPricePerGram}
-          spark={GOLD_FLOW.purchased.spark}
+          weight={transactions.filter(t => t.type === 'Gold Purchase').reduce((a, b) => a + (Math.abs(b.amount) / 74), 0)}
+          value={transactions.filter(t => t.type === 'Gold Purchase').reduce((a, b) => a + Math.abs(b.amount), 0)}
+          count={transactions.filter(t => t.type === 'Gold Purchase').length}
+          avgPrice={73.80}
+          spark={[]}
           format={format}
           formatUSD={formatUSD}
           showValue={isAdmin}
@@ -201,13 +195,17 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-6 items-center">
               <StockByPurityChart size="large" />
               <div className="space-y-2">
-                {STOCK_BY_PURITY.map((s) => (
-                  <div key={s.name} className="flex items-center gap-2 text-sm text-ink-soft">
-                    <span className="w-3 h-3 rounded-full" style={{ background: s.color }} />
-                    <span className="font-medium">{s.name}</span>
-                    <span className="ml-auto font-numeric text-ink">{s.value.toFixed(0)}g</span>
-                  </div>
-                ))}
+                {[24, 22, 18].map((k) => {
+                  const val = inventory.filter(b => b.karat === k).reduce((a, b) => a + b.weight, 0);
+                  const color = k === 24 ? "#b8893d" : k === 22 ? "#dcb35a" : "#c89b62";
+                  return (
+                    <div key={k} className="flex items-center gap-2 text-sm text-ink-soft">
+                      <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+                      <span className="font-medium">{k}K</span>
+                      <span className="ml-auto font-numeric text-ink">{val.toFixed(0)}g</span>
+                    </div>
+                  );
+                })}
                 <div className="divider-rule my-2" />
                 <div className="flex items-center gap-2 text-sm text-ink">
                   <span className="font-medium">Total fine</span>
@@ -265,13 +263,17 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-6 items-center">
               <StockByPurityChart size="large" />
               <div className="space-y-2">
-                {STOCK_BY_PURITY.map((s) => (
-                  <div key={s.name} className="flex items-center gap-2 text-sm text-ink-soft">
-                    <span className="w-3 h-3 rounded-full" style={{ background: s.color }} />
-                    <span className="font-medium">{s.name}</span>
-                    <span className="ml-auto font-numeric text-ink">{s.value.toFixed(0)}g</span>
-                  </div>
-                ))}
+                {[24, 22, 18].map((k) => {
+                  const val = inventory.filter(b => b.karat === k).reduce((a, b) => a + b.weight, 0);
+                  const color = k === 24 ? "#b8893d" : k === 22 ? "#dcb35a" : "#c89b62";
+                  return (
+                    <div key={k} className="flex items-center gap-2 text-sm text-ink-soft">
+                      <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+                      <span className="font-medium">{k}K</span>
+                      <span className="ml-auto font-numeric text-ink">{val.toFixed(0)}g</span>
+                    </div>
+                  );
+                })}
                 <div className="divider-rule my-2" />
                 <div className="flex items-center gap-2 text-sm text-ink">
                   <span className="font-medium">Total fine</span>
@@ -279,7 +281,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-ink-muted">
                   <span>Stock value</span>
-                  <span className="ml-auto font-numeric text-ink">{format(KPIS.stockValue)}</span>
+                  <span className="ml-auto font-numeric text-ink">{format(totalStockValue)}</span>
                 </div>
               </div>
             </div>
@@ -317,21 +319,21 @@ export default function Dashboard() {
               <tr><td colSpan={isAdmin ? 8 : 7} className="text-center text-ink-faint py-12">No transactions in this date range.</td></tr>
             ) : filteredTx.map((t) => (
               <tr key={t.ref} className="clickable" onClick={() => setTx(t)}>
-                <td className="font-numeric text-ink">{t.ref}</td>
-                <td className="text-ink-muted">{t.date}</td>
-                <td>{t.type}</td>
-                <td className="text-ink-soft">{t.party}</td>
-                {isAdmin && <td className="text-ink-muted">J. Assey</td>}
+                <td data-label="Ref" className="font-numeric text-ink">{t.ref}</td>
+                <td data-label="Date" className="text-ink-muted">{t.date}</td>
+                <td data-label="Type">{t.type}</td>
+                <td data-label="Counterparty" className="text-ink-soft">{t.party}</td>
+                {isAdmin && <td data-label="Submitted by" className="text-ink-muted">J. Assey</td>}
                 {isAdmin ? (
-                  <td className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
+                  <td data-label="Amount" className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
                     {t.amount < 0 ? "−" : "+"}{format(Math.abs(t.amount))}
                   </td>
                 ) : (
-                  <td className="text-right font-numeric text-ink">
+                  <td data-label="Weight" className="text-right font-numeric text-ink">
                     {t.type.includes("Gold") ? `${(Math.abs(t.amount) / 74).toFixed(0)} g` : "—"}
                   </td>
                 )}
-                <td><Badge tone={statusToTone(t.status)}>{t.status}</Badge></td>
+                <td data-label="Status"><Badge tone={statusToTone(t.status)}>{t.status}</Badge></td>
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View detail", icon: "ri-eye-line", onClick: () => setTx(t) },

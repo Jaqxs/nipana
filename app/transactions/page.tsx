@@ -6,7 +6,6 @@ import { Modal } from "../components/Modal";
 import { RowActionsMenu } from "../components/RowActionsMenu";
 import { ExportModal } from "../components/ExportModal";
 import { TransactionDetailModal } from "../components/TransactionDetailModal";
-import { RECENT_TX } from "../lib/mockData";
 import { useCurrency } from "../lib/currency-context";
 import { useDateRange } from "../lib/date-range-context";
 
@@ -220,15 +219,15 @@ export default function TransactionsPage() {
               <tr><td colSpan={8} className="text-center text-ink-faint py-12">No transactions match your filters.</td></tr>
             ) : filtered.map((t) => (
               <tr key={t.ref} className="clickable" onClick={() => setDetail(t)}>
-                <td className="font-numeric text-ink">{t.ref}</td>
-                <td className="text-ink-muted">{formatDate(t.date)}</td>
-                <td>{t.type}</td>
-                <td className="text-ink-soft">{t.party}</td>
-                <td className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
+                <td data-label="Reference" className="font-numeric text-ink">{t.ref}</td>
+                <td data-label="Date" className="text-ink-muted">{formatDate(t.date)}</td>
+                <td data-label="Type">{t.type}</td>
+                <td data-label="Counterparty" className="text-ink-soft">{t.party}</td>
+                <td data-label="Amount" className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
                   {t.amount < 0 ? "−" : "+"}{format(Math.abs(t.amount))}
                 </td>
-                <td className="text-ink-muted">J. Assey</td>
-                <td><Badge tone={statusToTone(t.status)}>{t.status}</Badge></td>
+                <td data-label="Submitted by" className="text-ink-muted">J. Assey</td>
+                <td data-label="Status"><Badge tone={statusToTone(t.status)}>{t.status}</Badge></td>
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(t) },

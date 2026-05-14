@@ -9,7 +9,16 @@ import { InventoryAreaChart, StockByPurityChart } from "../components/Charts";
 import { INVENTORY_BATCHES, fmtWeight, GOLD_PRICE } from "../lib/mockData";
 import { useCurrency } from "../lib/currency-context";
 
-type Batch = typeof INVENTORY_BATCHES[number];
+interface Batch {
+  batch: string;
+  weight: number;
+  karat: number;
+  fine: number;
+  location: string;
+  status: string;
+  value: number;
+  source: string;
+}
 
 // Removed hardcoded MOVEMENTS
 
@@ -193,14 +202,14 @@ export default function InventoryPage() {
                 <tr><td colSpan={9} className="text-center text-ink-faint py-12">No batches match these filters.</td></tr>
               ) : batches.map((b) => (
                 <tr key={b.batch} className="clickable" onClick={() => setDetail(b)}>
-                  <td className="font-numeric text-ink">{b.batch}</td>
-                  <td className="font-numeric">{b.weight.toFixed(2)} g</td>
-                  <td>{b.karat ? `${b.karat}K` : "Raw"}</td>
-                  <td className="font-numeric">{b.fine.toFixed(2)} g</td>
-                  <td className="text-ink-soft">{b.source}</td>
-                  <td className="text-ink-muted">{b.location}</td>
-                  <td><Badge tone={statusToTone(b.status)}>{b.status}</Badge></td>
-                  <td className="text-right font-numeric text-ink">{b.value ? format(b.value) : "—"}</td>
+                  <td data-label="Batch" className="font-numeric text-ink">{b.batch}</td>
+                  <td data-label="Weight" className="font-numeric">{b.weight.toFixed(2)} g</td>
+                  <td data-label="Karat">{b.karat ? `${b.karat}K` : "Raw"}</td>
+                  <td data-label="Fine wt." className="font-numeric">{b.fine.toFixed(2)} g</td>
+                  <td data-label="Source" className="text-ink-soft">{b.source}</td>
+                  <td data-label="Location" className="text-ink-muted">{b.location}</td>
+                  <td data-label="Status"><Badge tone={statusToTone(b.status)}>{b.status}</Badge></td>
+                  <td data-label="Value" className="text-right font-numeric text-ink">{b.value ? format(b.value) : "—"}</td>
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActionsMenu actions={[
                       { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(b) },
@@ -227,16 +236,16 @@ export default function InventoryPage() {
             <tbody>
               {movements.map((r: any, i: number) => (
                 <tr key={i}>
-                  <td className="text-ink-muted">{r.t}</td>
-                  <td className="font-numeric text-ink">{r.b}</td>
-                  <td>{r.m}</td>
-                  <td className="font-numeric text-ink-muted">{r.before.toFixed(1)}</td>
-                  <td className={`font-numeric ${r.d < 0 ? "text-rose-700" : r.d > 0 ? "text-sage-700" : "text-ink-muted"}`}>
+                  <td data-label="Time" className="text-ink-muted">{r.t}</td>
+                  <td data-label="Batch" className="font-numeric text-ink">{r.b}</td>
+                  <td data-label="Movement">{r.m}</td>
+                  <td data-label="Before" className="font-numeric text-ink-muted">{r.before.toFixed(1)}</td>
+                  <td data-label="Δ" className={`font-numeric ${r.d < 0 ? "text-rose-700" : r.d > 0 ? "text-sage-700" : "text-ink-muted"}`}>
                     {r.d > 0 ? "+" : ""}{r.d.toFixed(1)} g
                   </td>
-                  <td className="font-numeric text-ink">{r.after.toFixed(1)}</td>
-                  <td className="text-ink-soft">{r.by}</td>
-                  <td className="text-ink-muted">{r.l}</td>
+                  <td data-label="After" className="font-numeric text-ink">{r.after.toFixed(1)}</td>
+                  <td data-label="By" className="text-ink-soft">{r.by}</td>
+                  <td data-label="Linked" className="text-ink-muted">{r.l}</td>
                   <td className="text-right">
                     <RowActionsMenu actions={[
                       { label: "View linked record", icon: "ri-external-link-line", onClick: () => alert(`Open ${r.l}`) },

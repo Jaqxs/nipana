@@ -122,12 +122,12 @@ export default function SitesPage() {
               const utilization = (s.currentStock / s.capacity) * 100;
               return (
                 <tr key={s.id}>
-                  <td>
+                  <td data-label="Name & ID">
                     <div className="font-medium text-ink">{s.name}</div>
                     <div className="text-[10px] font-numeric text-ink-faint uppercase tracking-wider">{s.id}</div>
                   </td>
-                  <td className="text-ink-soft">{s.location}</td>
-                  <td className="text-ink-muted">
+                  <td data-label="Location" className="text-ink-soft">{s.location}</td>
+                  <td data-label="Manager" className="text-ink-muted">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-paper-200 flex items-center justify-center text-[10px] font-bold text-ink-soft">
                         {s.manager.split(' ').map((n: string) => n[0]).join('')}
@@ -135,8 +135,8 @@ export default function SitesPage() {
                       {s.manager}
                     </div>
                   </td>
-                  <td className="text-right font-numeric text-ink-muted">{s.staffCount}</td>
-                  <td>
+                  <td data-label="Staff" className="text-right font-numeric text-ink-muted">{s.staffCount}</td>
+                  <td data-label="Utilization">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-ink-faint">
                         <span>{utilization.toFixed(0)}%</span>
@@ -150,8 +150,8 @@ export default function SitesPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="text-right font-numeric text-ink font-medium">{s.currentStock.toFixed(2)}</td>
-                  <td><Badge tone={s.status === "Active" ? "sage" : s.status === "Maintenance" ? "amber" : "terracotta"} dot>{s.status}</Badge></td>
+                  <td data-label="Stock (kg)" className="text-right font-numeric text-ink font-medium">{s.currentStock.toFixed(2)}</td>
+                  <td data-label="Status"><Badge tone={s.status === "Active" ? "sage" : s.status === "Maintenance" ? "amber" : "terracotta"} dot>{s.status}</Badge></td>
                   <td className="text-right">
                     <RowActionsMenu actions={[
                       { label: "Edit details", icon: "ri-edit-line", onClick: () => {

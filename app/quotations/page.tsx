@@ -96,16 +96,16 @@ export default function QuotationsPage() {
               const expired = q.status === "EXPIRED";
               return (
                 <tr key={q.no} className="clickable" onClick={() => setDetail(q)}>
-                  <td className="font-numeric text-ink">{q.no}</td>
-                  <td className="text-ink-soft">{q.customer}</td>
-                  <td className={expired ? "text-rose-700" : "text-ink-muted"}>
+                  <td data-label="Quote" className="font-numeric text-ink">{q.no}</td>
+                  <td data-label="Customer" className="text-ink-soft">{q.customer}</td>
+                  <td data-label="Expires" className={expired ? "text-rose-700" : "text-ink-muted"}>
                     <span className="inline-flex items-center gap-1.5">
                       <i className={expired ? "ri-time-line" : "ri-calendar-line"} />
                       {new Date(q.expiry).toLocaleDateString()}
                     </span>
                   </td>
-                  <td className="text-right font-numeric text-ink">{format(q.amount)}</td>
-                  <td><Badge tone={statusToTone(q.status)}>{q.status}</Badge></td>
+                  <td data-label="Amount" className="text-right font-numeric text-ink">{format(q.amount)}</td>
+                  <td data-label="Status"><Badge tone={statusToTone(q.status)}>{q.status}</Badge></td>
                   <td className="text-right">
                     {q.status === "ACCEPTED" ? (
                       <button onClick={(e) => { e.stopPropagation(); setConverting(q); }} className="text-gold-700 hover:underline text-xs font-medium inline-flex items-center gap-1">

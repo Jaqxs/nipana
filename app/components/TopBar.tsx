@@ -7,11 +7,14 @@ import { useAuth } from "../lib/auth-context";
 import { NotificationBell } from "./NotificationBell";
 import { useEffect, useRef, useState } from "react";
 
+import { useMobile } from "../lib/mobile-context";
+
 export function TopBar() {
   const { role, setRole, isAdmin } = useRole();
   const { code, setCode } = useCurrency();
   const { rangeId, setRangeId, custom, setCustom } = useDateRange();
   const { user, logout } = useAuth();
+  const { setSidebarOpen } = useMobile();
   const [customOpen, setCustomOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -39,12 +42,19 @@ export function TopBar() {
 
   return (
     <header className="bg-white border-b border-line shrink-0">
-      <div className="px-6 md:px-10 py-3 flex items-center gap-4 max-w-[1480px] w-full mx-auto">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+      <div className="px-4 md:px-10 py-3 flex items-center gap-4 max-w-[1480px] w-full mx-auto">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden w-10 h-10 flex items-center justify-center text-ink-soft hover:bg-paper-50 rounded-lg transition"
+        >
+          <i className="ri-menu-2-fill text-xl" />
+        </button>
+
+        <div className="text-[11px] uppercase tracking-[0.18em] text-ink-faint hidden sm:block">
           {isAdmin ? "Administration" : "Field Operations"} · NIPANA Atlas
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 md:gap-3">
           <div className="hidden md:flex items-center surface-flat px-1 py-1 text-xs text-ink-muted">
             <button
               onClick={() => setRole("admin")}
@@ -60,8 +70,8 @@ export function TopBar() {
             </button>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 surface-flat px-3 py-2 text-sm text-ink-soft relative">
-            <i className="ri-calendar-2-line text-ink-faint" />
+          <div className="flex items-center gap-2 surface-flat px-2 md:px-3 py-2 text-sm text-ink-soft relative">
+            <i className="ri-calendar-2-line text-ink-faint hidden xs:block" />
             <select
               value={rangeId}
               onChange={(e) => {
@@ -69,7 +79,7 @@ export function TopBar() {
                 setRangeId(id);
                 if (id === "custom") setCustomOpen(true);
               }}
-              className="bg-transparent outline-none cursor-pointer pr-1"
+              className="bg-transparent outline-none cursor-pointer pr-1 text-xs md:text-sm"
             >
               {Object.values(RANGES).map((r) => (
                 <option key={r.id} value={r.id}>{r.label}</option>
@@ -78,30 +88,11 @@ export function TopBar() {
             {rangeId === "custom" && (
               <button
                 onClick={() => setCustomOpen(!customOpen)}
-                className="text-[11px] text-gold-700 hover:underline pl-1"
+                className="text-[11px] text-gold-700 hover:underline pl-1 hidden sm:block"
                 title={`${custom.from} → ${custom.to}`}
               >
                 {custom.from.slice(5)} → {custom.to.slice(5)}
               </button>
-            )}
-            {customOpen && rangeId === "custom" && (
-              <div
-                className="absolute top-12 right-0 w-72 bg-white border border-line rounded-xl z-50 p-4"
-                style={{ boxShadow: "0 18px 38px -12px rgba(31,26,20,0.22)" }}
-              >
-                <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-3">Custom range</div>
-                <label className="block mb-3">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted mb-1">From</div>
-                  <input type="date" className="input" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} />
-                </label>
-                <label className="block mb-4">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-ink-muted mb-1">To</div>
-                  <input type="date" className="input" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} />
-                </label>
-                <div className="flex justify-end">
-                  <button onClick={() => setCustomOpen(false)} className="btn-primary">Apply</button>
-                </div>
-              </div>
             )}
           </div>
 
@@ -109,7 +100,7 @@ export function TopBar() {
             <i className="ri-refresh-line" />
           </button>
 
-          <div className="hidden md:flex items-center gap-1.5 surface-flat px-3 py-2 text-sm text-ink-soft">
+          <div className="hidden sm:flex items-center gap-1.5 surface-flat px-3 py-2 text-sm text-ink-soft">
             <i className="ri-money-dollar-circle-line text-ink-faint" />
             <select
               value={code}
@@ -128,7 +119,7 @@ export function TopBar() {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-3 pl-2 hover:bg-paper-50 rounded-lg py-1 pr-2 transition"
+              className="flex items-center gap-3 pl-2 hover:bg-paper-50 rounded-lg py-1 pr-1 md:pr-2 transition"
             >
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm text-white"

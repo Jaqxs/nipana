@@ -7,7 +7,34 @@ import { RowActionsMenu } from "../components/RowActionsMenu";
 import { ExportModal } from "../components/ExportModal";
 import { Stat } from "../components/Stat";
 import { useRouter } from "next/navigation";
-import { fmtWeight, Customer, Supplier } from "../lib/mockData";
+import { fmtWeight } from "../lib/mockData";
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  totalPurchases: number;
+  outstanding: number;
+  joined: string;
+  lastTx: string;
+  status: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+  email: string;
+  contact: string;
+  location: string;
+  totalSupplied_g: number;
+  totalPaid: number;
+  outstanding: number;
+  joined: string;
+  lastDelivery: string;
+  status: string;
+}
 import { useCurrency } from "../lib/currency-context";
 import { usePersistence } from "../lib/persistence-context";
 
@@ -196,19 +223,19 @@ export default function ContactsPage() {
                 <tr><td colSpan={9} className="text-center text-ink-faint py-12">No customers match your filters.</td></tr>
               ) : filteredCustomers.map((c: any) => (
                 <tr key={c.id} className="clickable" onClick={() => setDetail(c)}>
-                  <td className="font-numeric text-ink">{c.id}</td>
-                  <td className="text-ink font-medium">{c.name}</td>
-                  <td className="text-ink-muted">
+                  <td data-label="ID" className="font-numeric text-ink">{c.id}</td>
+                  <td data-label="Name" className="text-ink font-medium">{c.name}</td>
+                  <td data-label="Contact" className="text-ink-muted">
                     <div className="text-sm">{c.email}</div>
                     <div className="text-xs">{c.phone}</div>
                   </td>
-                  <td className="text-ink-muted">{c.location}</td>
-                  <td className="text-right font-numeric text-ink">{format(c.totalPurchases)}</td>
-                  <td className={`text-right font-numeric ${c.outstanding > 0 ? "text-rose-700" : "text-ink-faint"}`}>
+                  <td data-label="Location" className="text-ink-muted">{c.location}</td>
+                  <td data-label="Total purchases" className="text-right font-numeric text-ink">{format(c.totalPurchases)}</td>
+                  <td data-label="Outstanding" className={`text-right font-numeric ${c.outstanding > 0 ? "text-rose-700" : "text-ink-faint"}`}>
                     {c.outstanding > 0 ? format(c.outstanding) : "—"}
                   </td>
-                  <td><Badge tone={c.status === "active" ? "sage" : "terracotta"} dot>{c.status}</Badge></td>
-                  <td className="text-ink-muted">{c.lastTx}</td>
+                  <td data-label="Status"><Badge tone={c.status === "active" ? "sage" : "terracotta"} dot>{c.status}</Badge></td>
+                  <td data-label="Last tx" className="text-ink-muted">{c.lastTx}</td>
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActionsMenu actions={[
                       { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(c) },
@@ -255,19 +282,19 @@ export default function ContactsPage() {
                 <tr><td colSpan={9} className="text-center text-ink-faint py-12">No suppliers match your filters.</td></tr>
               ) : filteredSuppliers.map((s: any) => (
                 <tr key={s.id} className="clickable" onClick={() => setDetail(s)}>
-                  <td className="font-numeric text-ink">{s.id}</td>
-                  <td className="text-ink font-medium">{s.name}</td>
-                  <td className="text-ink-muted">
+                  <td data-label="ID" className="font-numeric text-ink">{s.id}</td>
+                  <td data-label="Name" className="text-ink font-medium">{s.name}</td>
+                  <td data-label="Contact" className="text-ink-muted">
                     <div className="text-sm">{s.email}</div>
                     <div className="text-xs">{s.contact}</div>
                   </td>
-                  <td className="text-ink-muted">{s.location}</td>
-                  <td className="text-right font-numeric text-ink">{fmtWeight(s.totalSupplied_g)}</td>
-                  <td className={`text-right font-numeric ${s.outstanding > 0 ? "text-rose-700" : "text-ink-faint"}`}>
+                  <td data-label="Location" className="text-ink-muted">{s.location}</td>
+                  <td data-label="Total supplied" className="text-right font-numeric text-ink">{fmtWeight(s.totalSupplied_g)}</td>
+                  <td data-label="Outstanding" className={`text-right font-numeric ${s.outstanding > 0 ? "text-rose-700" : "text-ink-faint"}`}>
                     {s.outstanding > 0 ? format(s.outstanding) : "—"}
                   </td>
-                  <td><Badge tone={s.status === "active" ? "sage" : "terracotta"} dot>{s.status}</Badge></td>
-                  <td className="text-ink-muted">{s.lastDelivery}</td>
+                  <td data-label="Status"><Badge tone={s.status === "active" ? "sage" : "terracotta"} dot>{s.status}</Badge></td>
+                  <td data-label="Last delivery" className="text-ink-muted">{s.lastDelivery}</td>
                   <td className="text-right" onClick={(e) => e.stopPropagation()}>
                     <RowActionsMenu actions={[
                       { label: "View detail", icon: "ri-eye-line", onClick: () => setDetail(s) },

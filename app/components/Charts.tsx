@@ -28,6 +28,7 @@ const tooltipStyle = {
 const tip$ = (v: number) => `$${v.toLocaleString()}`;
 
 export function SalesVsExpensesChart() {
+  if (SALES_VS_EXPENSES.length === 0) return <div className="h-[280px] flex items-center justify-center text-ink-faint text-sm">No sales or expense data recorded.</div>;
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer>
@@ -45,6 +46,7 @@ export function SalesVsExpensesChart() {
 }
 
 export function ProfitTrendChart({ className = "h-[200px]" }: { className?: string } = {}) {
+  if (PROFIT_TREND.length === 0) return <div className={`${className} flex items-center justify-center text-ink-faint text-sm`}>No profit data available.</div>;
   const forecastStart = PROFIT_TREND.findIndex((p) => p.forecast !== null);
   const todayDay = forecastStart > 0 ? PROFIT_TREND[forecastStart - 1].day : null;
   const peak = PROFIT_TREND.reduce((a, b) => (b.profit > a.profit ? b : a), PROFIT_TREND[0]);
@@ -120,6 +122,7 @@ export function ProfitTrendChart({ className = "h-[200px]" }: { className?: stri
 export function StockByPurityChart({ size = "default" }: { size?: "default" | "large" } = {}) {
   const total = STOCK_BY_PURITY.reduce((a, b) => a + b.value, 0);
   const isLarge = size === "large";
+  if (STOCK_BY_PURITY.length === 0) return <div className={`${isLarge ? "h-[300px]" : "h-[220px]"} flex items-center justify-center text-ink-faint text-sm`}>No stock items.</div>;
   return (
     <div className={`${isLarge ? "h-[300px]" : "h-[220px]"} w-full relative`}>
       <ResponsiveContainer>
@@ -148,6 +151,7 @@ export function StockByPurityChart({ size = "default" }: { size?: "default" | "l
 }
 
 export function CashFlowWaterfall() {
+  if (CASH_FLOW.length === 0) return <div className="h-[280px] flex items-center justify-center text-ink-faint text-sm">No cash flow activity.</div>;
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer>
@@ -167,20 +171,8 @@ export function CashFlowWaterfall() {
 }
 
 export function MonthlyRevenueProfitChart() {
-  const data = [
-    { m: "Jun", revenue: 142_800, profit: 38_400 },
-    { m: "Jul", revenue: 165_300, profit: 44_900 },
-    { m: "Aug", revenue: 178_600, profit: 49_200 },
-    { m: "Sep", revenue: 156_400, profit: 42_700 },
-    { m: "Oct", revenue: 184_900, profit: 56_100 },
-    { m: "Nov", revenue: 211_300, profit: 64_800 },
-    { m: "Dec", revenue: 198_400, profit: 58_200 },
-    { m: "Jan", revenue: 224_100, profit: 71_400 },
-    { m: "Feb", revenue: 241_800, profit: 79_900 },
-    { m: "Mar", revenue: 268_300, profit: 84_500 },
-    { m: "Apr", revenue: 312_600, profit: 102_300 },
-    { m: "May", revenue: 248_400, profit: 85_600 },
-  ];
+  const data: any[] = [];
+  if (data.length === 0) return <div className="h-[300px] flex items-center justify-center text-ink-faint text-sm">No historical data available.</div>;
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer>
@@ -199,14 +191,9 @@ export function MonthlyRevenueProfitChart() {
 }
 
 export function ReportRunsDonut() {
-  const data = [
-    { name: "Financial", value: 24, color: "#b8893d" },
-    { name: "Operations", value: 12, color: "#dcb35a" },
-    { name: "Inventory", value: 8, color: "#c89b62" },
-    { name: "Audit", value: 6, color: "#7a8c6b" },
-    { name: "Customers", value: 4, color: "#a85944" },
-  ];
+  const data: any[] = [];
   const total = data.reduce((a, b) => a + b.value, 0);
+  if (data.length === 0) return <div className="h-[260px] flex items-center justify-center text-ink-faint text-sm">No recent report activity.</div>;
   return (
     <div className="h-[260px] w-full relative">
       <ResponsiveContainer>
@@ -235,10 +222,8 @@ export function ReportRunsDonut() {
 }
 
 export function InventoryAreaChart() {
-  const data = Array.from({ length: 24 }).map((_, i) => ({
-    t: `${i}h`,
-    weight: 3800 + Math.sin(i / 2) * 400 + i * 12,
-  }));
+  const data: any[] = [];
+  if (data.length === 0) return <div className="h-[200px] flex items-center justify-center text-ink-faint text-sm">Waiting for inventory data...</div>;
   return (
     <div className="h-[200px] w-full">
       <ResponsiveContainer>
