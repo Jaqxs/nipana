@@ -100,11 +100,11 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   };
   const updateTransaction = async (ref: string, updates: any) => {
     setTransactions(prev => prev.map(t => t.ref === ref ? { ...t, ...updates } : t));
-    try { await backendClient.patch(`transactions/${ref}`, updates); } catch (e) { console.error(e); }
+    try { await backendClient.patch("transactions", ref, updates); } catch (e) { console.error(e); }
   };
   const deleteTransaction = async (ref: string) => {
     try {
-      await backendClient.delete(`transactions/${ref}`);
+      await backendClient.delete("transactions", ref);
       setTransactions(prev => prev.filter(t => t.ref !== ref));
     } catch (e) { console.error(e); }
   };
