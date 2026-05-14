@@ -93,9 +93,10 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
       const saved = await backendClient.post("transactions", tx);
       setTransactions(prev => [saved, ...prev]);
     } catch (e: any) {
-      console.error(e);
-      const msg = e.message || "Please check your connection.";
-      alert(`Failed to record transaction: ${msg}`);
+      console.error("Add Transaction Error:", e);
+      const msg = e.message || "Unknown Error";
+      const target = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      alert(`NETWORK ERROR\nTarget: ${target}/api/transactions\nError: ${msg}\n\nPlease check your Browser Console (F12) for more details.`);
     }
   };
   const updateTransaction = async (ref: string, updates: any) => {
