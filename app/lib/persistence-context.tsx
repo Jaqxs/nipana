@@ -67,7 +67,11 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
       ]);
       
       setTransactions(txs || []);
-      setInventory(inv || []);
+      setInventory((inv || []).map((b: any) => ({
+        ...b,
+        batch: b.batch || b.batchId,
+        fine: b.fine !== undefined ? b.fine : b.fineWeight
+      })));
       setFlows(flows || []);
       setCustomers((cts || []).filter((c: any) => c.type === "Customer"));
       setSuppliers((cts || []).filter((c: any) => c.type === "Supplier"));

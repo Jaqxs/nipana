@@ -9,9 +9,10 @@ interface Props {
 
 export function GoldPriceCard({ isAdmin, onUpdate }: Props) {
   const { current, delta, source, asOf, history } = GOLD_PRICE;
-  const high = Math.max(...history);
-  const low = Math.min(...history);
-  const dayChange = ((delta / (current - delta)) * 100);
+  const hasHistory = history && history.length > 0;
+  const high = hasHistory ? Math.max(...history) : 0;
+  const low = hasHistory ? Math.min(...history) : 0;
+  const dayChange = (current - delta) !== 0 ? ((delta / (current - delta)) * 100) : 0;
 
   return (
     <div className="surface p-5 flex flex-col" style={{ background: "#fdf6e4" }}>
