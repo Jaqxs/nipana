@@ -1,10 +1,11 @@
 import { ReactNode } from "react";
 
-type Tone = "sage" | "amber" | "rose" | "terracotta" | "ink" | "info";
+type Tone = "sage" | "amber" | "rose" | "terracotta" | "ink" | "info" | "gold";
 
 const TONES: Record<Tone, string> = {
   sage: "bg-sage-100 text-sage-700",
   amber: "bg-gold-100 text-gold-700",
+  gold: "bg-gold-100 text-gold-700",
   rose: "bg-rose-100 text-rose-700",
   terracotta: "bg-terracotta-100 text-terracotta-700",
   ink: "bg-paper-300 text-ink-soft",
