@@ -228,7 +228,21 @@ export default function SitesPage() {
         </div>
       </Modal>
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="sites" rowCount={filtered.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="sites"
+        rowCount={filtered.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(sites, "sites-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
     </div>
   );
 }

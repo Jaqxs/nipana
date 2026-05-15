@@ -370,7 +370,21 @@ export default function Dashboard() {
 
       <AlertDetailModal alert={alertDetail} onClose={() => setAlertDetail(null)} onNavigate={(href) => { setAlertDetail(null); router.push(href); }} />
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="dashboard snapshot" rowCount={filteredTx.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="dashboard snapshot"
+        rowCount={filteredTx.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("./lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(filteredTx, "dashboard-snapshot.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
     </div>
   );
 }
