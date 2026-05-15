@@ -30,10 +30,14 @@ export function Sidebar() {
       <div className="px-2 mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden"
             style={{ background: "#b8893d" }}
           >
-            <i className="ri-coin-line text-white text-xl" />
+            <img 
+              src="/assets/logo.jpeg" 
+              alt="NIPANA Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="font-display text-[17px] leading-tight text-ink">

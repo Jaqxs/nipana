@@ -203,8 +203,8 @@ function InvoicePreview({ invoice }: { invoice: any }) {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: "#b8893d" }}>
-              <i className="ri-coin-line text-white text-2xl" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "#b8893d" }}>
+              <img src="/assets/logo.jpeg" alt="NIPANA Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="font-display text-xl text-ink">NIPANA Atlas</div>

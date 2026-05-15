@@ -31,10 +31,10 @@ export function GoldPriceCard({ isAdmin, onUpdate }: Props) {
           </div>
         </div>
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
           style={{ background: "#b8893d" }}
         >
-          <i className="ri-coin-line text-white text-2xl" />
+          <img src="/assets/logo.jpeg" alt="NIPANA Logo" className="w-full h-full object-cover" />
         </div>
       </div>
 

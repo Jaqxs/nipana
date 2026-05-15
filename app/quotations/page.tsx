@@ -151,11 +151,23 @@ export default function QuotationsPage() {
         </>}>
         {detail && (
           <div>
-            <div className="flex items-center justify-between mb-5">
-              <Badge tone={statusToTone(detail.status)}>{detail.status}</Badge>
-              <span className="text-sm text-ink-muted">Expires {new Date(detail.expiry).toLocaleDateString()}</span>
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "#b8893d" }}>
+                  <img src="/assets/logo.jpeg" alt="NIPANA Logo" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="font-display text-xl text-ink">NIPANA Atlas</div>
+                  <div className="text-xs text-ink-muted">Mwanza, Tanzania · Quotation</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <Badge tone={statusToTone(detail.status)}>{detail.status}</Badge>
+                <div className="text-[11px] text-ink-muted mt-2 uppercase tracking-wider">Expires {new Date(detail.expiry).toLocaleDateString()}</div>
+              </div>
             </div>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm mb-5">
+
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm mb-5 pt-4 border-t border-line">
               <Row label="Customer" value={detail.customer} />
               <Row label="Issued by" value="Maria Rweyemamu" />
               <Row label="Date" value={new Date(detail.date || detail.createdAt).toLocaleDateString()} />
