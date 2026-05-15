@@ -1,8 +1,14 @@
 import prisma from "@/app/lib/prisma";
 
 export const transactionService = {
-  async getAll() {
+  async getAll(user?: any) {
+    const where: any = {};
+    if (user && user.role !== "admin") {
+      where.createdBy = user.email;
+    }
+
     return await prisma.transaction.findMany({
+      where,
       orderBy: { date: "desc" },
       include: {
         inventoryBatches: true,
