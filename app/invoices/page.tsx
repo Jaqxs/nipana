@@ -154,8 +154,8 @@ export default function InvoicesPage() {
         footer={
           <>
             <button className="btn-secondary" onClick={() => setPreview(null)}>Close</button>
-            <button className="btn-secondary"><i className="ri-mail-send-line" />Email to customer</button>
-            <button className="btn-primary"><i className="ri-download-line" />Download PDF</button>
+            <button className="btn-secondary" onClick={() => alert("Emailing feature coming soon")}><i className="ri-mail-send-line" />Email to customer</button>
+            <button className="btn-primary" onClick={() => window.print()}><i className="ri-download-line" />Print / Download PDF</button>
           </>
         }>
         {preview && <InvoicePreview invoice={preview} />}
@@ -175,7 +175,21 @@ export default function InvoicesPage() {
         }} id="new-invoice-form" initialCustomer={prefilledCustomer} />
       </Modal>
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="invoices" rowCount={filtered.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="invoices"
+        rowCount={filtered.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(filtered, "invoices-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
 
       {/* Reminders modal */}
       <Modal open={reminding} onClose={() => setReminding(false)}

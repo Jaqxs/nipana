@@ -202,7 +202,21 @@ export default function CashFlowPage() {
 
       <CashFlowDetailModal flow={detail} onClose={() => setDetail(null)} format={format} />
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="cash flow entries" rowCount={flows.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="cash flow entries"
+        rowCount={flows.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(cashFlow, "cash-flow-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
 
       <Modal open={!!adding} onClose={() => setAdding(null)}
         eyebrow={`Cash ${adding === "in" ? "inflow" : "outflow"}`}
@@ -237,9 +251,9 @@ function CashFlowDetailModal({ flow, onClose, format }: { flow: Flow | null; onC
       eyebrow={inflow ? "Cash inflow" : "Cash outflow"} title={flow.category}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Close</button>
-        <button className="btn-secondary"><i className="ri-printer-line" />Print</button>
-        <button className="btn-secondary"><i className="ri-edit-line" />Reclassify</button>
-        <button className="btn-primary"><i className="ri-external-link-line" />Open linked record</button>
+        <button className="btn-secondary" onClick={() => window.print()}><i className="ri-printer-line" />Print</button>
+        <button className="btn-secondary" onClick={() => alert("Reclassify feature coming soon")}><i className="ri-edit-line" />Reclassify</button>
+        <button className="btn-primary" onClick={() => alert("Opening linked record")}><i className="ri-external-link-line" />Open linked record</button>
       </>}>
       {/* Hero */}
       <div className="surface-flat p-5 mb-5"

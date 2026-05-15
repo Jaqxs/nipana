@@ -142,7 +142,8 @@ export default function QuotationsPage() {
         eyebrow="Quotation" title={detail?.no}
         footer={<>
           <button className="btn-secondary" onClick={() => setDetail(null)}>Close</button>
-          <button className="btn-secondary"><i className="ri-edit-line" />Edit</button>
+          <button className="btn-secondary" onClick={() => window.print()}><i className="ri-printer-line" />Print / PDF</button>
+          <button className="btn-secondary" onClick={() => alert("Edit feature coming soon")}><i className="ri-edit-line" />Edit</button>
           {detail?.status === "ACCEPTED" && (
             <button className="btn-primary" onClick={() => { setConverting(detail); setDetail(null); }}>
               <i className="ri-arrow-right-line" />Convert to invoice
@@ -210,7 +211,21 @@ export default function QuotationsPage() {
         )}
       </Modal>
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="quotations" rowCount={filtered.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="quotations"
+        rowCount={filtered.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(filtered, "quotations-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
 
       {/* Create quotation */}
       <Modal open={creating} onClose={() => setCreating(false)} size="lg"

@@ -301,7 +301,21 @@ export default function InventoryPage() {
         onAdjust={(b) => setConfirm({ batch: b, action: "adjust" })}
       />
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="inventory batches" rowCount={batches.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="inventory batches"
+        rowCount={batches.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(inventory, "inventory-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
 
       {/* Action confirmation & Real Inputs */}
       <InventoryActionModal confirm={confirm} onClose={() => setConfirm(null)} onConfirm={handleConfirmAction} />
@@ -329,7 +343,7 @@ function BatchDetailModal({ batch, onClose, format, formatUSD, movements, onPrin
       eyebrow="Batch" title={batch.batch}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Close</button>
-        <button className="btn-secondary" onClick={() => onPrint?.(batch)}><i className="ri-printer-line" />Print certificate</button>
+        <button className="btn-secondary" onClick={() => window.print()}><i className="ri-printer-line" />Print certificate</button>
         <button className="btn-secondary" onClick={() => onMove?.(batch)}><i className="ri-arrow-right-line" />Move location</button>
         <button className="btn-primary" onClick={() => onAdjust?.(batch)}><i className="ri-edit-line" />Adjust</button>
       </>}>

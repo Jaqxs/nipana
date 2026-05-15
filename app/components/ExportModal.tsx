@@ -5,6 +5,7 @@ import { Modal } from "./Modal";
 interface Props {
   open: boolean;
   onClose: () => void;
+  onExport: (format: string) => void;
   /** Title of the dataset, e.g. "transactions" */
   resource: string;
   rowCount: number;
@@ -16,12 +17,17 @@ const FORMATS = [
   { id: "csv", label: "CSV", icon: "ri-file-text-line", desc: "Plain text for any tool" },
 ];
 
-export function ExportModal({ open, onClose, resource, rowCount }: Props) {
+export function ExportModal({ open, onClose, onExport, resource, rowCount }: Props) {
   const [format, setFormat] = useState("xlsx");
   const [scope, setScope] = useState<"filtered" | "all">("filtered");
   const [includeMeta, setIncludeMeta] = useState(true);
   const [emailing, setEmailing] = useState(false);
   const [email, setEmail] = useState("");
+
+  const handleExport = () => {
+    onExport(format);
+    onClose();
+  };
 
   return (
     <Modal
@@ -31,7 +37,7 @@ export function ExportModal({ open, onClose, resource, rowCount }: Props) {
       title={`Export ${resource}`}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button className="btn-primary" onClick={onClose}>
+        <button className="btn-primary" onClick={handleExport}>
           <i className="ri-download-line" /> {emailing ? "Email & download" : "Download"}
         </button>
       </>}

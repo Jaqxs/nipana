@@ -382,7 +382,22 @@ export default function ContactsPage() {
         {editing && <ContactForm kind={"totalPurchases" in editing ? "customers" : "suppliers"} initial={editing} formData={formData} setFormData={setFormData} />}
       </Modal>
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource={resourceLabel} rowCount={filteredCount} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource={resourceLabel}
+        rowCount={filteredCount}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              const data = tab === "customers" ? customers : suppliers;
+              exportToCSV(data, `${resourceLabel}-export.csv`);
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
     </div>
   );
 }

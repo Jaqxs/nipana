@@ -274,7 +274,21 @@ export default function TransactionsPage() {
         onDownloadReceipt={(tx) => alert(`Downloading receipt for ${tx.ref}`)}
       />
 
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} resource="transactions" rowCount={filtered.length} />
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        resource="transactions"
+        rowCount={filtered.length}
+        onExport={(format) => {
+          if (format === "csv" || format === "xlsx") {
+            import("../lib/export-utils").then(({ exportToCSV }) => {
+              exportToCSV(transactions, "transactions-export.csv");
+            });
+          } else {
+            window.print();
+          }
+        }}
+      />
 
       <Modal open={!!confirming} onClose={() => setConfirming(null)}
         eyebrow="Confirm action" title={confirming ? `${confirming.action[0].toUpperCase() + confirming.action.slice(1)} ${confirming.tx.ref}?` : ""}
