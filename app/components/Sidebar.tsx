@@ -81,10 +81,16 @@ export function Sidebar() {
           <span>Profile</span>
         </Link>
         {isAdmin && (
-          <Link href="/settings" onClick={() => setSidebarOpen(false)} className={`nav-item ${pathname?.startsWith("/settings") ? "active" : ""}`}>
-            <i className="ri-settings-3-line" />
-            <span>Settings</span>
-          </Link>
+          <>
+            <Link href="/users" onClick={() => setSidebarOpen(false)} className={`nav-item ${pathname?.startsWith("/users") ? "active" : ""}`}>
+              <i className="ri-group-line" />
+              <span>Users</span>
+            </Link>
+            <Link href="/settings" onClick={() => setSidebarOpen(false)} className={`nav-item ${pathname?.startsWith("/settings") ? "active" : ""}`}>
+              <i className="ri-settings-3-line" />
+              <span>Settings</span>
+            </Link>
+          </>
         )}
         <button onClick={logout} className="nav-item w-full text-left">
           <i className="ri-logout-circle-r-line" />

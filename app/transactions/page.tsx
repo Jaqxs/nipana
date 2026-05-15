@@ -226,7 +226,7 @@ export default function TransactionsPage() {
                 <td data-label="Amount" className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
                   {t.amount < 0 ? "−" : "+"}{format(Math.abs(t.amount))}
                 </td>
-                <td data-label="Submitted by" className="text-ink-muted">J. Assey</td>
+                <td data-label="Submitted by" className="text-ink-muted">{t.createdBy}</td>
                 <td data-label="Status"><Badge tone={statusToTone(t.status)}>{t.status}</Badge></td>
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[

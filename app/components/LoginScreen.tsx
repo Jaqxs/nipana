@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth-context";
-import { useRole } from "../lib/role-context";
 
 const BACKGROUNDS = [
   "/assets/WhatsApp Image 2026-05-05 at 9.52.38 PM.jpeg",
@@ -11,7 +10,6 @@ const BACKGROUNDS = [
 
 export function LoginScreen() {
   const { login } = useAuth();
-  const { setRole } = useRole();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -36,17 +34,12 @@ export function LoginScreen() {
     setBusy(false);
     if (!result.ok) {
       setError(result.error || "Login failed.");
-    } else {
-      // Sync the demo role toggle to the logged-in user's role
-      const lower = email.trim().toLowerCase();
-      if (lower === "m.rwey@nipana.tz") setRole("sales_ops");
-      else setRole("admin");
     }
   };
 
   const fillDemo = (which: "admin" | "ops") => {
-    setEmail(which === "admin" ? "j.assey@nipana.tz" : "m.rwey@nipana.tz");
-    setPassword("demo");
+    setEmail(which === "admin" ? "director@nipanaatlas.co.tz" : "ceo@nipanaatlas.co.tz");
+    setPassword("nipana2026");
     setError(null);
   };
 
@@ -173,14 +166,14 @@ export function LoginScreen() {
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={() => fillDemo("admin")} className="surface-flat bg-white/50 p-3 text-left hover:border-gold-500 transition">
-            <div className="text-[11px] uppercase tracking-[0.14em] text-gold-700 mb-1">Admin</div>
-            <div className="text-sm text-ink font-medium">Julius Assey</div>
-            <div className="text-[11px] text-ink-muted truncate">j.assey@nipana.tz</div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-gold-700 mb-1">Director</div>
+            <div className="text-sm text-ink font-medium">Administrative</div>
+            <div className="text-[11px] text-ink-muted truncate">director@nipanaatlas.co.tz</div>
           </button>
           <button onClick={() => fillDemo("ops")} className="surface-flat bg-white/50 p-3 text-left hover:border-gold-500 transition">
-            <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-1">Sales & Ops</div>
-            <div className="text-sm text-ink font-medium">Maria Rweyemamu</div>
-            <div className="text-[11px] text-ink-muted truncate">m.rwey@nipana.tz</div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-1">CEO</div>
+            <div className="text-sm text-ink font-medium">Administrative</div>
+            <div className="text-[11px] text-ink-muted truncate">ceo@nipanaatlas.co.tz</div>
           </button>
         </div>
 

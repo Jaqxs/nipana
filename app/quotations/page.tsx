@@ -8,12 +8,14 @@ import { RowActionsMenu } from "../components/RowActionsMenu";
 import { ExportModal } from "../components/ExportModal";
 import { useCurrency } from "../lib/currency-context";
 import { usePersistence } from "../lib/persistence-context";
+import { useRole } from "../lib/role-context";
 
 const STATUSES = ["All", "DRAFT", "PENDING", "APPROVED", "ACCEPTED", "REJECTED", "EXPIRED", "CONVERTED"];
 
 export default function QuotationsPage() {
   const searchParams = useSearchParams();
   const { quotations, addQuotation, updateQuotation } = usePersistence();
+  const { isAdmin } = useRole();
   const [tab, setTab] = useState("All");
   const [detail, setDetail] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
@@ -87,7 +89,7 @@ export default function QuotationsPage() {
       <div className="surface">
         <table className="ledger">
           <thead>
-            <tr><th>Quote</th><th>Customer</th><th>Expires</th><th className="text-right">Amount</th><th>Status</th><th /><th /></tr>
+            <tr><th>Quote</th><th>Customer</th><th>Expires</th><th className="text-right">Amount</th>{isAdmin && <th>Submitted by</th>}<th>Status</th><th /><th /></tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
@@ -105,6 +107,7 @@ export default function QuotationsPage() {
                     </span>
                   </td>
                   <td data-label="Amount" className="text-right font-numeric text-ink">{format(q.amount)}</td>
+                  {isAdmin && <td data-label="Submitted by" className="text-ink-muted">{q.createdBy}</td>}
                   <td data-label="Status"><Badge tone={statusToTone(q.status)}>{q.status}</Badge></td>
                   <td className="text-right">
                     {q.status === "ACCEPTED" ? (
@@ -170,7 +173,7 @@ export default function QuotationsPage() {
 
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm mb-5 pt-4 border-t border-line">
               <Row label="Customer" value={detail.customer} />
-              <Row label="Issued by" value="Maria Rweyemamu" />
+              <Row label="Issued by" value={detail.createdBy} />
               <Row label="Date" value={new Date(detail.date || detail.createdAt).toLocaleDateString()} />
               <Row label="Notes" value={detail.notes || "—"} />
             </dl>

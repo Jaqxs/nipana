@@ -68,7 +68,8 @@ export const transactionService = {
             category: transaction.type,
             description: `Linked to ${transaction.ref}`,
             amount: Math.abs(transaction.amount),
-            transactionId: transaction.id
+            transactionId: transaction.id,
+            createdBy: transaction.createdBy
           }
         });
       }

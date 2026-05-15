@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMobile } from "../lib/mobile-context";
 
 export function TopBar() {
-  const { role, setRole, isAdmin } = useRole();
+  const { isAdmin } = useRole();
   const { code, setCode } = useCurrency();
   const { rangeId, setRangeId, custom, setCustom } = useDateRange();
   const { user, logout } = useAuth();
@@ -55,20 +55,6 @@ export function TopBar() {
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:gap-3">
-          <div className="hidden md:flex items-center surface-flat px-1 py-1 text-xs text-ink-muted">
-            <button
-              onClick={() => setRole("admin")}
-              className={`px-3 py-1.5 rounded-md transition ${role === "admin" ? "bg-gold-100 text-gold-700" : ""}`}
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => setRole("sales_ops")}
-              className={`px-3 py-1.5 rounded-md transition ${role === "sales_ops" ? "bg-gold-100 text-gold-700" : ""}`}
-            >
-              Sales & Ops
-            </button>
-          </div>
 
           <div className="flex items-center gap-2 surface-flat px-2 md:px-3 py-2 text-sm text-ink-soft relative">
             <i className="ri-calendar-2-line text-ink-faint hidden xs:block" />

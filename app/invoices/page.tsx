@@ -10,6 +10,7 @@ import { useDateRange } from "../lib/date-range-context";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { usePersistence } from "../lib/persistence-context";
+import { useRole } from "../lib/role-context";
 
 const TABS = ["All", "Draft", "Pending", "Sent", "Paid", "Overdue"];
 
@@ -23,6 +24,7 @@ export default function InvoicesPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [prefilledCustomer, setPrefilledCustomer] = useState("");
   const { invoices, addInvoice, updateInvoice } = usePersistence();
+  const { isAdmin } = useRole();
   const { format } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
 
@@ -115,7 +117,7 @@ export default function InvoicesPage() {
           <thead>
             <tr>
               <th>Invoice</th><th>Customer</th><th>Issued</th><th>Due</th>
-              <th className="text-right">Amount</th><th>Status</th><th />
+              <th className="text-right">Amount</th>{isAdmin && <th>Submitted by</th>}<th>Status</th><th />
             </tr>
           </thead>
           <tbody>
@@ -128,6 +130,7 @@ export default function InvoicesPage() {
                 <td data-label="Issued" className="text-ink-muted">{i.issued}</td>
                 <td data-label="Due" className="text-ink-muted">{i.due}</td>
                 <td data-label="Amount" className="text-right font-numeric text-ink">{format(i.amount)}</td>
+                {isAdmin && <td data-label="Submitted by" className="text-ink-muted">{i.createdBy}</td>}
                 <td data-label="Status"><Badge tone={statusToTone(i.status)}>{i.status}</Badge></td>
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[

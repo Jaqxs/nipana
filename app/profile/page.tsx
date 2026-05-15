@@ -10,7 +10,6 @@ import { useCurrency, CURRENCIES, CurrencyCode } from "../lib/currency-context";
 
 const COMMON_TABS = [
   { id: "account", label: "Account", icon: "ri-user-3-line" },
-  { id: "security", label: "Security", icon: "ri-shield-keyhole-line" },
   { id: "notifications", label: "Notifications", icon: "ri-notification-3-line" },
   { id: "preferences", label: "Preferences", icon: "ri-palette-line" },
   { id: "activity", label: "Activity", icon: "ri-history-line" },
@@ -116,66 +115,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* SECURITY */}
-          {tab === "security" && (
-            <div className="space-y-6">
-              <div className="surface p-6">
-                <SectionHeader eyebrow="Security" title="Sign-in protection" />
-                <div className="space-y-3">
-                  <Toggle
-                    label="Two-factor authentication"
-                    desc={isAdmin ? "Required for administrators. Use a TOTP app." : "Recommended. Adds a one-time code at sign-in."}
-                    enabled={isAdmin}
-                    onClick={() => setTwoFAOpen(true)}
-                    cta={isAdmin ? "Manage" : "Enable"}
-                  />
-                  <Toggle
-                    label="Trust this device for 7 days"
-                    desc="Skip 2FA on this device after a successful sign-in."
-                    enabled={true}
-                  />
-                  {isAdmin && (
-                    <Toggle
-                      label="Require approval for high-value transactions"
-                      desc="Anything over $10,000 needs a second admin to approve."
-                      enabled={true}
-                    />
-                  )}
-                </div>
-                <div className="divider-rule my-5" />
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <div className="text-sm font-medium text-ink">Password</div>
-                    <div className="text-xs text-ink-muted">Last changed Mar 12, 2026 (53 days ago)</div>
-                  </div>
-                  <button onClick={() => setPwOpen(true)} className="btn-secondary"><i className="ri-lock-password-line" /> Change password</button>
-                </div>
-              </div>
-
-              <div className="surface">
-                <div className="px-5 pt-5">
-                  <SectionHeader eyebrow="Active sessions" title="Where you're signed in" />
-                </div>
-                <table className="ledger mt-2">
-                  <thead><tr><th>Device</th><th>Location</th><th>Last active</th><th /></tr></thead>
-                  <tbody>
-                    <tr>
-                      <td className="text-ink"><i className="ri-macbook-line mr-1.5 text-ink-faint" /> MacBook · Chrome</td>
-                      <td className="text-ink-muted">Mwanza · 102.219.xx.xx</td>
-                      <td className="text-ink-muted">Now <Badge tone="sage">Current</Badge></td>
-                      <td />
-                    </tr>
-                    <tr>
-                      <td className="text-ink"><i className="ri-smartphone-line mr-1.5 text-ink-faint" /> iPhone · Safari</td>
-                      <td className="text-ink-muted">Mwanza · 154.94.xx.xx</td>
-                      <td className="text-ink-muted">2 hr ago</td>
-                      <td className="text-right"><button className="text-xs text-rose-700 hover:underline">Revoke</button></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* NOTIFICATIONS */}
           {tab === "notifications" && (
@@ -381,7 +320,7 @@ function Field({ label, children, full }: { label: string; children: React.React
   );
 }
 
-function Toggle({ label, desc, enabled, onClick, cta }: { label: string; desc: string; enabled: boolean; onClick?: () => void; cta?: string }) {
+function Toggle({ label, desc, enabled, onChange, onClick, cta }: { label: string; desc: string; enabled: boolean; onChange?: () => void; onClick?: () => void; cta?: string }) {
   return (
     <div className="surface-flat p-3.5 flex items-center gap-4">
       <div className="flex-1 min-w-0">
@@ -391,7 +330,10 @@ function Toggle({ label, desc, enabled, onClick, cta }: { label: string; desc: s
       {cta ? (
         <button onClick={onClick} className="btn-secondary text-xs py-1.5 px-3">{cta}</button>
       ) : (
-        <span className={`relative w-10 h-6 rounded-full transition cursor-pointer ${enabled ? "bg-gold-500" : "bg-paper-300"}`}>
+        <span
+          onClick={onChange}
+          className={`relative w-10 h-6 rounded-full transition cursor-pointer ${enabled ? "bg-gold-500" : "bg-paper-300"}`}
+        >
           <span className={`absolute top-0.5 ${enabled ? "left-[18px]" : "left-0.5"} w-5 h-5 rounded-full bg-white shadow transition-all`} />
         </span>
       )}

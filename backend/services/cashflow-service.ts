@@ -16,6 +16,7 @@ export const cashflowService = {
         description: data.description || data.desc || "N/A",
         amount: data.amount,
         transactionId: data.transactionId,
+        createdBy: data.createdBy || "System",
       }
     });
   }

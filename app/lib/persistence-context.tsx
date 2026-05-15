@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import * as mock from "./mockData";
 import { backendClient } from "./backend-client";
+import { useAuth } from "./auth-context";
 
 interface PersistenceContextType {
   transactions: any[];
@@ -40,6 +41,7 @@ interface PersistenceContextType {
 const PersistenceContext = createContext<PersistenceContextType | undefined>(undefined);
 
 export function PersistenceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -66,18 +68,24 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
         backendClient.get("quotations"),
       ]);
       
-      setTransactions(txs || []);
+      const isAdmin = user?.role === "admin";
+      const userName = user?.name || "System";
+
+      const filterByCreator = (list: any[]) => 
+        isAdmin ? (list || []) : (list || []).filter(item => item.createdBy === userName);
+      
+      setTransactions(filterByCreator(txs));
       setInventory((inv || []).map((b: any) => ({
         ...b,
         batch: b.batch || b.batchId,
         fine: b.fine !== undefined ? b.fine : b.fineWeight
       })));
-      setFlows(flows || []);
+      setFlows(filterByCreator(flows));
       setCustomers((cts || []).filter((c: any) => c.type === "Customer"));
       setSuppliers((cts || []).filter((c: any) => c.type === "Supplier"));
       setSites(sts || []);
-      setInvoices(invs || []);
-      setQuotations(qts || []);
+      setInvoices(filterByCreator(invs));
+      setQuotations(filterByCreator(qts));
       setError(null);
     } catch (err: any) {
       console.error("Backend connection failed:", err);
@@ -88,12 +96,13 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    refreshData();
-  }, []);
+    if (user) refreshData();
+  }, [user]);
 
   const addTransaction = async (tx: any) => {
     try {
-      const saved = await backendClient.post("transactions", tx);
+      const payload = { ...tx, createdBy: user?.name || "System" };
+      const saved = await backendClient.post("transactions", payload);
       setTransactions(prev => [saved, ...prev]);
     } catch (e: any) {
       console.error("Add Transaction Error:", e);
@@ -150,7 +159,8 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
 
   const addCashFlow = async (entry: any) => {
     try {
-      const saved = await backendClient.post("cash-flow", entry);
+      const payload = { ...entry, createdBy: user?.name || "System" };
+      const saved = await backendClient.post("cash-flow", payload);
       setFlows(prev => [saved, ...prev]);
     } catch (e) {
       console.error(e);
@@ -184,7 +194,8 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
 
   const addInvoice = async (inv: any) => {
     try {
-      const saved = await backendClient.post("invoices", inv);
+      const payload = { ...inv, createdBy: user?.name || "System" };
+      const saved = await backendClient.post("invoices", payload);
       setInvoices(prev => [saved, ...prev]);
     } catch (e) {
       console.error(e);
@@ -197,7 +208,8 @@ export function PersistenceProvider({ children }: { children: ReactNode }) {
   };
   const addQuotation = async (q: any) => {
     try {
-      const saved = await backendClient.post("quotations", q);
+      const payload = { ...q, createdBy: user?.name || "System" };
+      const saved = await backendClient.post("quotations", payload);
       setQuotations(prev => [saved, ...prev]);
     } catch (e) {
       console.error(e);

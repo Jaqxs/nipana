@@ -323,7 +323,7 @@ export default function Dashboard() {
                 <td data-label="Date" className="text-ink-muted">{t.date}</td>
                 <td data-label="Type">{t.type}</td>
                 <td data-label="Counterparty" className="text-ink-soft">{t.party}</td>
-                {isAdmin && <td data-label="Submitted by" className="text-ink-muted">J. Assey</td>}
+                {isAdmin && <td data-label="Submitted by" className="text-ink-muted">{t.createdBy}</td>}
                 {isAdmin ? (
                   <td data-label="Amount" className={`text-right font-numeric ${t.amount < 0 ? "text-rose-700" : "text-sage-700"}`}>
                     {t.amount < 0 ? "−" : "+"}{format(Math.abs(t.amount))}

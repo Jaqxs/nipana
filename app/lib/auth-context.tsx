@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
+import { useSession, signIn, signOut, SessionProvider } from "next-auth/react";
 
 interface AuthUser {
   name: string;
@@ -16,45 +17,41 @@ interface AuthCtx {
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
-const STORAGE_KEY = "gbms.auth.user";
 
-const DEMO_USERS: Record<string, { name: string; password: string; role: "admin" | "sales_ops" }> = {
-  "j.assey@nipana.tz": { name: "Julius Assey", password: "demo", role: "admin" },
-  "m.rwey@nipana.tz": { name: "Maria Rweyemamu", password: "demo", role: "sales_ops" },
-};
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {}
-    setReady(true);
-  }, []);
+function AuthProviderInner({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
+  const ready = status !== "loading";
+  const user = session?.user as AuthUser | null;
 
   const login = async (email: string, password: string) => {
-    await new Promise((r) => setTimeout(r, 400));
-    const record = DEMO_USERS[email.trim().toLowerCase()];
-    if (!record) return { ok: false, error: "No account found for that email." };
-    if (record.password !== password) return { ok: false, error: "Incorrect password." };
-    const u: AuthUser = { name: record.name, email: email.trim().toLowerCase(), role: record.role };
-    setUser(u);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(u)); } catch {}
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      return { ok: false, error: "Invalid credentials." };
+    }
     return { ok: true };
   };
 
   const logout = () => {
-    setUser(null);
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    signOut({ callbackUrl: "/login" });
   };
 
   return (
     <Ctx.Provider value={{ user, isAuthenticated: !!user, ready, login, logout }}>
       {children}
     </Ctx.Provider>
+  );
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return (
+    <SessionProvider>
+      <AuthProviderInner>{children}</AuthProviderInner>
+    </SessionProvider>
   );
 }
 

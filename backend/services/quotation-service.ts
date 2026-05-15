@@ -18,6 +18,7 @@ export const quotationService = {
         amount: data.amount,
         status: data.status || "Draft",
         notes: data.notes,
+        createdBy: data.createdBy || "System",
         items: {
           create: data.items.map((item: any) => ({
             description: item.description,

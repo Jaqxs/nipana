@@ -1,8 +1,31 @@
 import prisma from "@/app/lib/prisma";
 import * as mock from "@/app/lib/mockData";
+import bcrypt from "bcryptjs";
 
 export const seedService = {
   async seed() {
+    // 0. Seed Administrative Users
+    const admins = [
+      { email: "director@nipanaatlas.co.tz", name: "Director", role: "admin" },
+      { email: "ceo@nipanaatlas.co.tz", name: "CEO", role: "admin" },
+      { email: "Developer@nipanaatlas.co.tz", name: "Developer", role: "admin" },
+    ];
+
+    const tempPassword = await bcrypt.hash("nipana2026", 10);
+
+    for (const admin of admins) {
+      await prisma.user.upsert({
+        where: { email: admin.email },
+        update: {},
+        create: {
+          email: admin.email,
+          name: admin.name,
+          password: tempPassword,
+          role: admin.role,
+        },
+      });
+    }
+
     // 1. Clear existing data (CAUTION: Only for development)
     // await prisma.transaction.deleteMany();
     // await prisma.inventoryBatch.deleteMany();
@@ -51,6 +74,7 @@ export const seedService = {
           party: tx.party,
           amount: tx.amount,
           status: tx.status,
+          createdBy: tx.ref === "TX-018338" || tx.ref === "TX-018340" ? "Maria Rweyemamu" : "Julius Assey",
         }
       });
     }
@@ -66,6 +90,7 @@ export const seedService = {
           due: new Date("2026-05-08"),
           amount: 18400,
           status: "Pending",
+          createdBy: "Julius Assey",
           items: {
             create: [
               { description: "Refined Gold 24K", weight: 250, karat: "24K", price: 73.6 }
@@ -86,6 +111,7 @@ export const seedService = {
           expiry: new Date("2026-05-17"),
           amount: 12500,
           status: "DRAFT",
+          createdBy: "Maria Rweyemamu",
           items: {
             create: [
               { description: "Gold Bullion 22K", weight: 200, karat: "22K", price: 62.5 }

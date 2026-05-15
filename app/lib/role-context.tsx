@@ -1,20 +1,23 @@
 "use client";
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
+
+import { useAuth } from "./auth-context";
 
 export type Role = "admin" | "sales_ops";
 
 interface RoleCtx {
   role: Role;
-  setRole: (r: Role) => void;
   isAdmin: boolean;
 }
 
 const Ctx = createContext<RoleCtx | null>(null);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>("admin");
+  const { user } = useAuth();
+  const role = user?.role || "sales_ops";
+  
   return (
-    <Ctx.Provider value={{ role, setRole, isAdmin: role === "admin" }}>
+    <Ctx.Provider value={{ role, isAdmin: role === "admin" }}>
       {children}
     </Ctx.Provider>
   );

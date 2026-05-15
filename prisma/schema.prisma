@@ -8,6 +8,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String    // Hashed password
+  role          String    @default("sales_ops") // admin or sales_ops
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 model Transaction {
   id          String   @id @default(cuid())
   ref         String   @unique
@@ -97,6 +107,7 @@ model CashFlow {
   category    String
   description String
   amount      Float
+  createdBy   String   @default("System")
   
   // Relations
   transactionId String?
@@ -114,6 +125,7 @@ model Invoice {
   amount      Float
   status      String   @default("Draft") // Draft, Pending, Sent, Paid, Overdue
   notes       String?
+  createdBy   String   @default("System")
   
   items       InvoiceItem[]
   
@@ -141,6 +153,7 @@ model Quotation {
   amount      Float
   status      String   @default("Draft") // Draft, Sent, Accepted, Rejected, Expired
   notes       String?
+  createdBy   String   @default("System")
   
   items       QuotationItem[]
   
