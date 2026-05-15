@@ -9,11 +9,10 @@ export default function UserManagementPage() {
   const { user, isAdmin } = { user: useAuth().user, isAdmin: useAuth().user?.role === "admin" };
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [newUserData, setNewUserData] = useState({
-    name: "",
+  const [inviting, setInviting] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteData, setInviteData] = useState({
     email: "",
-    password: "",
     role: "sales_ops",
   });
   const [error, setError] = useState("");
@@ -34,24 +33,29 @@ export default function UserManagementPage() {
     fetchUsers();
   }, []);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInviteLink("");
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUserData),
+        body: JSON.stringify(inviteData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create user");
+      if (!res.ok) throw new Error(data.error || "Failed to generate invite");
       
-      setCreating(false);
-      setNewUserData({ name: "", email: "", password: "", role: "sales_ops" });
+      setInviteLink(data.inviteLink);
       fetchUsers();
     } catch (err: any) {
       setError(err.message);
     }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(inviteLink);
+    alert("Invite link copied to clipboard!");
   };
 
   if (!isAdmin) {
@@ -69,8 +73,8 @@ export default function UserManagementPage() {
         title="User Management"
         description="Manage system access and roles for all workers."
         actions={
-          <button className="btn-primary" onClick={() => setCreating(true)}>
-            <i className="ri-user-add-line" /> Add new user
+          <button className="btn-primary" onClick={() => { setInviting(true); setInviteLink(""); }}>
+            <i className="ri-mail-send-line" /> Invite new staff
           </button>
         }
       />
@@ -79,9 +83,9 @@ export default function UserManagementPage() {
         <table className="ledger">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
+              <th>User</th>
               <th>Role</th>
+              <th>Status</th>
               <th>Joined</th>
               <th />
             </tr>
@@ -93,11 +97,18 @@ export default function UserManagementPage() {
               <tr><td colSpan={5} className="text-center py-12 text-ink-faint">No users found.</td></tr>
             ) : users.map((u) => (
               <tr key={u.id}>
-                <td className="font-medium text-ink">{u.name}</td>
-                <td className="text-ink-muted">{u.email}</td>
+                <td>
+                  <div className="font-medium text-ink">{u.name || "Pending Onboarding"}</div>
+                  <div className="text-[11px] text-ink-muted">{u.email}</div>
+                </td>
                 <td>
                   <Badge tone={u.role === "admin" ? "gold" : "sage"}>
                     {u.role.toUpperCase()}
+                  </Badge>
+                </td>
+                <td>
+                  <Badge tone={u.status === "active" ? "sage" : "amber"}>
+                    {(u.status || "active").toUpperCase()}
                   </Badge>
                 </td>
                 <td className="text-ink-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
@@ -113,58 +124,65 @@ export default function UserManagementPage() {
       </div>
 
       <Modal
-        open={creating}
-        onClose={() => setCreating(false)}
+        open={inviting}
+        onClose={() => setInviting(false)}
         eyebrow="Access Control"
-        title="Add new system user"
+        title="Invite new staff member"
         footer={
           <>
-            <button className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button>
-            <button className="btn-primary" form="create-user-form">Create User</button>
+            <button className="btn-secondary" onClick={() => setInviting(false)}>Done</button>
+            {!inviteLink && <button className="btn-primary" form="invite-user-form">Generate Link</button>}
           </>
         }
       >
-        <form id="create-user-form" onSubmit={handleCreateUser} className="space-y-4">
-          {error && <div className="bg-rose-50 text-rose-700 p-3 rounded text-sm">{error}</div>}
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Full Name">
-              <input 
-                className="input" 
-                required 
-                value={newUserData.name} 
-                onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
-              />
-            </Field>
-            <Field label="Email Address">
-              <input 
-                type="email" 
-                className="input" 
-                required 
-                value={newUserData.email} 
-                onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-              />
-            </Field>
-            <Field label="Initial Password">
-              <input 
-                type="password" 
-                className="input" 
-                required 
-                value={newUserData.password} 
-                onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-              />
-            </Field>
-            <Field label="Role">
-              <select 
-                className="input" 
-                value={newUserData.role} 
-                onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+        {!inviteLink ? (
+          <form id="invite-user-form" onSubmit={handleInviteUser} className="space-y-4">
+            {error && <div className="bg-rose-50 text-rose-700 p-3 rounded text-sm">{error}</div>}
+            <div className="space-y-4">
+              <Field label="Email Address">
+                <input 
+                  type="email" 
+                  className="input" 
+                  required 
+                  placeholder="staff@nipanaatlas.co.tz"
+                  value={inviteData.email} 
+                  onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                />
+              </Field>
+              <Field label="Assign Role">
+                <select 
+                  className="input" 
+                  value={inviteData.role} 
+                  onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
+                >
+                  <option value="sales_ops">Sales & Operations</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </Field>
+            </div>
+            <p className="text-[11px] text-ink-muted mt-2">
+              An invitation record will be created. You will need to share the generated link with the user manually.
+            </p>
+          </form>
+        ) : (
+          <div className="space-y-4 py-4">
+            <div className="bg-sage-50 text-sage-700 p-4 rounded-lg border border-sage-200">
+              <div className="text-xs uppercase tracking-widest font-bold mb-2">Invitation Ready</div>
+              <div className="text-sm break-all font-mono bg-white p-3 rounded border border-sage-200 mb-4 select-all">
+                {inviteLink}
+              </div>
+              <button 
+                onClick={copyToClipboard}
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
-                <option value="sales_ops">Sales & Operations</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </Field>
+                <i className="ri-file-copy-line" /> Copy Link
+              </button>
+            </div>
+            <p className="text-[11px] text-ink-muted text-center">
+              Send this link to <strong>{inviteData.email}</strong>. It will expire in 48 hours.
+            </p>
           </div>
-        </form>
+        )}
       </Modal>
     </div>
   );

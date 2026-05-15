@@ -46,17 +46,26 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" }
-    });
-    return NextResponse.json(users);
+    const [users, invitations] = await Promise.all([
+      prisma.user.findMany({
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.invitation.findMany({
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+
+    // Map invitations to a format similar to users for the UI
+    const pendingUsers = invitations.map(inv => ({
+      id: `pending-${inv.id}`,
+      email: inv.email,
+      name: "Pending Onboarding",
+      role: inv.role,
+      status: "pending",
+      createdAt: inv.createdAt
+    }));
+
+    return NextResponse.json([...users, ...pendingUsers]);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

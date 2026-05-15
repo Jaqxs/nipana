@@ -12,10 +12,20 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
-  password      String    // Hashed password
-  role          String    @default("sales_ops") // admin or sales_ops
+  password      String?   // Nullable for pending invites
+  role          String    @default("sales_ops")
+  status        String    @default("active") // active, pending, suspended
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      String   @default("sales_ops")
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 model Transaction {
