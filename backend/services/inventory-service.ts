@@ -1,4 +1,5 @@
 import prisma from "@/app/lib/prisma";
+import { notificationService } from "./notification-service";
 
 export const inventoryService = {
   async getAll() {
@@ -52,6 +53,19 @@ export const inventoryService = {
             reference: "Weight Update"
           }
         });
+
+        // Trigger real-time notification if weight falls below 750g
+        if (batch.weight < 750) {
+          try {
+            await notificationService.create({
+              kind: "stock",
+              title: "Low stock alert",
+              body: `${batch.karat}K grade batch ${batch.batchId} is at ${batch.weight}g — below 750g safety threshold.`
+            });
+          } catch (e) {
+            console.error("Failed to trigger stock alert notification:", e);
+          }
+        }
       }
 
       if (data.location !== undefined && data.location !== oldBatch.location) {

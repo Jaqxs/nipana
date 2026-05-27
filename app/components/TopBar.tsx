@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useRole } from "../lib/role-context";
-import { useCurrency, CURRENCIES, CurrencyCode } from "../lib/currency-context";
 import { useDateRange, RANGES, RangeId } from "../lib/date-range-context";
 import { useAuth } from "../lib/auth-context";
 import { NotificationBell } from "./NotificationBell";
@@ -11,7 +10,6 @@ import { useMobile } from "../lib/mobile-context";
 
 export function TopBar() {
   const { isAdmin } = useRole();
-  const { code, setCode } = useCurrency();
   const { rangeId, setRangeId, custom, setCustom } = useDateRange();
   const { user, logout } = useAuth();
   const { setSidebarOpen } = useMobile();
@@ -85,20 +83,6 @@ export function TopBar() {
           <button className="surface-flat w-9 h-9 flex items-center justify-center text-ink-soft hover:text-gold-600 transition">
             <i className="ri-refresh-line" />
           </button>
-
-          <div className="hidden sm:flex items-center gap-1.5 surface-flat px-3 py-2 text-sm text-ink-soft">
-            <i className="ri-money-dollar-circle-line text-ink-faint" />
-            <select
-              value={code}
-              onChange={(e) => setCode(e.target.value as CurrencyCode)}
-              className="bg-transparent outline-none cursor-pointer font-medium"
-              aria-label="Currency"
-            >
-              {Object.values(CURRENCIES).map((c) => (
-                <option key={c.code} value={c.code}>{c.code}</option>
-              ))}
-            </select>
-          </div>
 
           <NotificationBell />
 

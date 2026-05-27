@@ -1,23 +1,21 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from "react";
 
-export type CurrencyCode = "TZS" | "USD" | "EUR" | "GBP" | "KES";
+export type CurrencyCode = "TZS";
 
 interface CurrencyMeta {
   code: CurrencyCode;
   label: string;
   symbol: string;
-  rate: number; // multiplier from base USD
+  rate: number; // multiplier from base currency (TZS is now base 1)
   decimals: number;
 }
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
-  TZS: { code: "TZS", label: "Tanzanian Shilling", symbol: "TSh", rate: 2500, decimals: 0 },
-  USD: { code: "USD", label: "US Dollar", symbol: "$", rate: 1, decimals: 2 },
-  EUR: { code: "EUR", label: "Euro", symbol: "€", rate: 0.92, decimals: 2 },
-  GBP: { code: "GBP", label: "British Pound", symbol: "£", rate: 0.79, decimals: 2 },
-  KES: { code: "KES", label: "Kenyan Shilling", symbol: "KSh", rate: 129, decimals: 0 },
+  TZS: { code: "TZS", label: "Tanzanian Shilling", symbol: "TSh", rate: 1, decimals: 0 },
 };
+
+const USD_META = { code: "USD", label: "US Dollar", symbol: "$", rate: 1, decimals: 2 };
 
 interface FormatOpts {
   decimals?: number;
@@ -30,7 +28,7 @@ interface CurrencyCtx {
   code: CurrencyCode;
   setCode: (c: CurrencyCode) => void;
   meta: CurrencyMeta;
-  format: (usdAmount: number, opts?: FormatOpts) => string;
+  format: (amount: number, opts?: FormatOpts) => string;
   /** Always-USD format for things like gold spot rates that are global by convention */
   formatUSD: (usdAmount: number) => string;
 }
@@ -45,7 +43,7 @@ function compactFmt(value: number) {
   return value.toFixed(0);
 }
 
-function fmt(amount: number, meta: CurrencyMeta, opts?: FormatOpts) {
+function fmt(amount: number, meta: { symbol: string; rate: number; decimals: number }, opts?: FormatOpts) {
   const value = amount * meta.rate;
   const sign = opts?.signed && value > 0 ? "+" : "";
   const negative = value < 0 ? "−" : sign;
@@ -71,7 +69,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     setCode,
     meta,
     format: (n, opts) => fmt(n, meta, opts),
-    formatUSD: (n) => fmt(n, CURRENCIES.USD),
+    formatUSD: (n) => fmt(n, USD_META),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -81,3 +79,4 @@ export function useCurrency() {
   if (!c) throw new Error("useCurrency must be used within CurrencyProvider");
   return c;
 }
+

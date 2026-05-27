@@ -11,6 +11,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { usePersistence } from "../lib/persistence-context";
 import { useRole } from "../lib/role-context";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const TABS = ["All", "Draft", "Pending", "Sent", "Paid", "Overdue"];
 
@@ -27,6 +29,80 @@ export default function InvoicesPage() {
   const { isAdmin } = useRole();
   const { format } = useCurrency();
   const { inRangeFromShortDate, label: rangeLabel } = useDateRange();
+
+  const downloadPDF = async () => {
+    const element = document.getElementById("invoice-content");
+    if (!element) return;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById("invoice-content");
+        if (el) {
+          el.style.height = "auto";
+          el.style.overflow = "visible";
+          el.style.padding = "24px";
+          el.style.backgroundColor = "white";
+        }
+      }
+    });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const imgWidth = 210;
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save(`invoice-${preview?.no || "download"}.pdf`);
+  };
+
+  const printDocument = async () => {
+    const element = document.getElementById("invoice-content");
+    if (!element) return;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById("invoice-content");
+        if (el) {
+          el.style.height = "auto";
+          el.style.overflow = "visible";
+          el.style.padding = "24px";
+          el.style.backgroundColor = "white";
+        }
+      }
+    });
+    const imgData = canvas.toDataURL("image/png");
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; }
+            img { max-width: 100%; height: auto; }
+            @page { margin: 0; }
+          </style>
+        </head>
+        <body>
+          <img src="${imgData}" onload="window.print(); window.close();" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -49,7 +125,8 @@ export default function InvoicesPage() {
 
   return (
     <div>
-      <PageHeader
+      <div className="print:hidden">
+        <PageHeader
         title="Invoices"
         description={`Customer invoices and payment status · ${rangeLabel}`}
         actions={
@@ -135,7 +212,7 @@ export default function InvoicesPage() {
                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RowActionsMenu actions={[
                     { label: "View invoice", icon: "ri-eye-line", onClick: () => setPreview(i) },
-                    { label: "Download PDF", icon: "ri-download-line", onClick: () => alert(`Download ${i.no}`) },
+                    { label: "Download PDF", icon: "ri-download-line", onClick: () => { setPreview(i); setTimeout(() => window.print(), 500); } },
                     { label: "Email to customer", icon: "ri-mail-send-line", onClick: () => alert(`Email ${i.customer}`) },
                     ...(i.status === "Overdue" || i.status === "Sent" ? [
                       { label: "Send reminder", icon: "ri-notification-line", onClick: () => alert("Reminder sent") },
@@ -150,6 +227,7 @@ export default function InvoicesPage() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {/* Invoice preview modal */}
       <Modal open={!!preview} onClose={() => setPreview(null)} size="xl"
@@ -158,7 +236,8 @@ export default function InvoicesPage() {
           <>
             <button className="btn-secondary" onClick={() => setPreview(null)}>Close</button>
             <button className="btn-secondary" onClick={() => alert("Emailing feature coming soon")}><i className="ri-mail-send-line" />Email to customer</button>
-            <button className="btn-primary" onClick={() => window.print()}><i className="ri-download-line" />Print / Download PDF</button>
+            <button className="btn-secondary" onClick={printDocument}><i className="ri-printer-line" />Print</button>
+            <button className="btn-primary" onClick={downloadPDF}><i className="ri-download-line" />Download</button>
           </>
         }>
         {preview && <InvoicePreview invoice={preview} />}
@@ -216,7 +295,7 @@ export default function InvoicesPage() {
 function InvoicePreview({ invoice }: { invoice: any }) {
   const { format } = useCurrency();
   return (
-    <div>
+    <div id="invoice-content">
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-3">

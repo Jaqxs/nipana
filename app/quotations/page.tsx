@@ -9,6 +9,8 @@ import { ExportModal } from "../components/ExportModal";
 import { useCurrency } from "../lib/currency-context";
 import { usePersistence } from "../lib/persistence-context";
 import { useRole } from "../lib/role-context";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const STATUSES = ["All", "DRAFT", "PENDING", "APPROVED", "ACCEPTED", "REJECTED", "EXPIRED", "CONVERTED"];
 
@@ -23,6 +25,80 @@ export default function QuotationsPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [prefilledCustomer, setPrefilledCustomer] = useState("");
   const { format } = useCurrency();
+
+  const downloadPDF = async () => {
+    const element = document.getElementById("quotation-content");
+    if (!element) return;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById("quotation-content");
+        if (el) {
+          el.style.height = "auto";
+          el.style.overflow = "visible";
+          el.style.padding = "24px";
+          el.style.backgroundColor = "white";
+        }
+      }
+    });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const imgWidth = 210;
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save(`quotation-${detail?.no || "download"}.pdf`);
+  };
+
+  const printDocument = async () => {
+    const element = document.getElementById("quotation-content");
+    if (!element) return;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById("quotation-content");
+        if (el) {
+          el.style.height = "auto";
+          el.style.overflow = "visible";
+          el.style.padding = "24px";
+          el.style.backgroundColor = "white";
+        }
+      }
+    });
+    const imgData = canvas.toDataURL("image/png");
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; }
+            img { max-width: 100%; height: auto; }
+            @page { margin: 0; }
+          </style>
+        </head>
+        <body>
+          <img src="${imgData}" onload="window.print(); window.close();" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -41,7 +117,8 @@ export default function QuotationsPage() {
 
   return (
     <div>
-      <PageHeader
+      <div className="print:hidden">
+        <PageHeader
         title="Quotations"
         description="Price quotations. Accepted ones convert directly to invoices."
         actions={
@@ -129,7 +206,7 @@ export default function QuotationsPage() {
                       ...(q.status === "EXPIRED" ? [
                         { label: "Reissue", icon: "ri-refresh-line", onClick: () => alert("Reissued") },
                       ] : []),
-                      { label: "Download PDF", icon: "ri-download-line", onClick: () => alert("Downloading"), divider: true },
+                      { label: "Download PDF", icon: "ri-download-line", onClick: () => { setDetail(q); setTimeout(() => window.print(), 500); }, divider: true },
                       { label: "Archive", icon: "ri-archive-line", onClick: () => alert("Archived"), danger: true, divider: true },
                     ]} />
                   </td>
@@ -139,13 +216,15 @@ export default function QuotationsPage() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {/* Detail modal */}
       <Modal open={!!detail} onClose={() => setDetail(null)} size="lg"
         eyebrow="Quotation" title={detail?.no}
         footer={<>
           <button className="btn-secondary" onClick={() => setDetail(null)}>Close</button>
-          <button className="btn-secondary" onClick={() => window.print()}><i className="ri-printer-line" />Print / PDF</button>
+          <button className="btn-secondary" onClick={printDocument}><i className="ri-printer-line" />Print</button>
+          <button className="btn-primary" onClick={downloadPDF}><i className="ri-download-line" />Download</button>
           <button className="btn-secondary" onClick={() => alert("Edit feature coming soon")}><i className="ri-edit-line" />Edit</button>
           {detail?.status === "ACCEPTED" && (
             <button className="btn-primary" onClick={() => { setConverting(detail); setDetail(null); }}>
@@ -154,19 +233,23 @@ export default function QuotationsPage() {
           )}
         </>}>
         {detail && (
-          <div>
+          <div id="quotation-content">
             <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "#b8893d" }}>
-                  <img src="/assets/logo.jpeg" alt="NIPANA Logo" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="font-display text-xl text-ink">NIPANA Atlas</div>
-                  <div className="text-xs text-ink-muted">Mwanza, Tanzania · Quotation</div>
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "#b8893d" }}>
+                    <img src="/assets/logo.jpeg" alt="NIPANA Logo" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="font-display text-xl text-ink">NIPANA Atlas</div>
+                    <div className="text-xs text-ink-muted">Mwanza, Tanzania · TIN 109-204-883</div>
+                  </div>
                 </div>
               </div>
               <div className="text-right">
-                <Badge tone={statusToTone(detail.status)}>{detail.status}</Badge>
+                <div className="font-display text-2xl text-ink">Quotation</div>
+                <div className="text-sm text-ink-muted font-numeric">{detail.no}</div>
+                <div className="mt-2"><Badge tone={statusToTone(detail.status)}>{detail.status}</Badge></div>
                 <div className="text-[11px] text-ink-muted mt-2 uppercase tracking-wider">Expires {new Date(detail.expiry).toLocaleDateString()}</div>
               </div>
             </div>

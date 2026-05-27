@@ -29,13 +29,13 @@ export function Modal({ open, onClose, title, eyebrow, size = "md", footer, chil
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay print:bg-transparent print:relative print:p-0" onClick={onClose}>
       <div
-        className={`modal-panel ${SIZES[size]}`}
+        className={`modal-panel ${SIZES[size]} print:shadow-none print:max-w-none print:w-full print:border-0`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || eyebrow) && (
-          <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4 border-b border-line">
+          <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4 border-b border-line print:hidden">
             <div>
               {eyebrow && (
                 <div className="text-[11px] uppercase tracking-[0.18em] text-ink-faint mb-1">
@@ -44,14 +44,14 @@ export function Modal({ open, onClose, title, eyebrow, size = "md", footer, chil
               )}
               {title && <div className="font-display text-2xl text-ink">{title}</div>}
             </div>
-            <button onClick={onClose} className="btn-ghost -mr-2 -mt-1 text-xl">
+            <button onClick={onClose} className="btn-ghost -mr-2 -mt-1 text-xl print:hidden">
               <i className="ri-close-line" />
             </button>
           </div>
         )}
         <div className="px-6 py-5">{children}</div>
         {footer && (
-          <div className="px-6 py-4 border-t border-line bg-paper-50/50 flex items-center justify-end gap-3">
+          <div className="px-6 py-4 border-t border-line bg-paper-50/50 flex items-center justify-end gap-3 print:hidden">
             {footer}
           </div>
         )}

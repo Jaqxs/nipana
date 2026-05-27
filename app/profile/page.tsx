@@ -6,7 +6,6 @@ import { Modal } from "../components/Modal";
 import { Badge } from "../components/Badge";
 import { useAuth } from "../lib/auth-context";
 import { useRole } from "../lib/role-context";
-import { useCurrency, CURRENCIES, CurrencyCode } from "../lib/currency-context";
 
 const COMMON_TABS = [
   { id: "account", label: "Account", icon: "ri-user-3-line" },
@@ -21,7 +20,6 @@ const ADMIN_EXTRA = { id: "admin-shortcuts", label: "Admin shortcuts", icon: "ri
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const { isAdmin } = useRole();
-  const { code, setCode } = useCurrency();
   const [tab, setTab] = useState("account");
   const [pwOpen, setPwOpen] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
@@ -156,11 +154,9 @@ export default function ProfilePage() {
               <SectionHeader eyebrow="Preferences" title="Display and regional" />
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Default currency">
-                  <select className="input" value={code} onChange={(e) => setCode(e.target.value as CurrencyCode)}>
-                    {Object.values(CURRENCIES).map((c) => (
-                      <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
-                    ))}
-                  </select>
+                  <div className="input flex items-center bg-paper-50 text-ink-muted select-none">
+                    TSh (Tanzanian Shilling) · Fixed
+                  </div>
                 </Field>
                 <Field label="Language">
                   <select className="input"><option>English</option><option>Swahili</option></select>

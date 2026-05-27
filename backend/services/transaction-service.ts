@@ -1,4 +1,5 @@
 import prisma from "@/app/lib/prisma";
+import { notificationService } from "./notification-service";
 
 export const transactionService = {
   async getAll(user?: any) {
@@ -18,7 +19,7 @@ export const transactionService = {
   },
 
   async create(data: any) {
-    return await prisma.transaction.create({
+    const transaction = await prisma.transaction.create({
       data: {
         ref: data.ref,
         date: new Date(data.date),
@@ -30,6 +31,19 @@ export const transactionService = {
         createdBy: data.createdBy || "System",
       }
     });
+
+    // Create real-time notification
+    try {
+      await notificationService.create({
+        kind: "approval",
+        title: "Pending approval",
+        body: `${transaction.createdBy} submitted ${transaction.ref} — ${transaction.party} purchase, $${transaction.amount.toLocaleString()}.`
+      });
+    } catch (e) {
+      console.error("Failed to create transaction notification:", e);
+    }
+
+    return transaction;
   },
 
   async update(idOrRef: string, data: any) {
@@ -78,6 +92,17 @@ export const transactionService = {
             createdBy: transaction.createdBy
           }
         });
+
+        // Trigger real-time notification on status confirmation
+        try {
+          await notificationService.create({
+            kind: "system",
+            title: "Transaction confirmed",
+            body: `Transaction ${transaction.ref} has been confirmed and fully processed.`
+          });
+        } catch (e) {
+          console.error("Failed to trigger update notification:", e);
+        }
       }
 
       return transaction;

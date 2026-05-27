@@ -1,4 +1,5 @@
 import prisma from "@/app/lib/prisma";
+import { notificationService } from "./notification-service";
 
 export const invoiceService = {
   async getAll() {
@@ -9,7 +10,7 @@ export const invoiceService = {
   },
 
   async create(data: any) {
-    return await prisma.invoice.create({
+    const invoice = await prisma.invoice.create({
       data: {
         no: data.no,
         customer: data.customer,
@@ -30,6 +31,19 @@ export const invoiceService = {
       },
       include: { items: true }
     });
+
+    // Create real-time notification for new invoices
+    try {
+      await notificationService.create({
+        kind: "invoice",
+        title: "Invoice created",
+        body: `${invoice.createdBy} created invoice ${invoice.no} for ${invoice.customer}. Amount: $${invoice.amount.toLocaleString()}.`
+      });
+    } catch (e) {
+      console.error("Failed to create invoice notification:", e);
+    }
+
+    return invoice;
   },
 
   async update(id: string, data: any) {

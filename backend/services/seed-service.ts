@@ -121,6 +121,21 @@ export const seedService = {
       });
     }
 
+    // 7. Seed Notifications
+    const existingNotifications = await prisma.notification.count();
+    if (existingNotifications === 0) {
+      await prisma.notification.createMany({
+        data: [
+          { kind: "approval", title: "Pending approval", body: "Maria Rweyemamu submitted TX-018340 — Geita Cooperative purchase, $22,800." },
+          { kind: "anomaly", title: "Anomaly flagged", body: "AN-2218 · TX-018340 sits 2.8σ above category mean. Review recommended." },
+          { kind: "invoice", title: "Invoice viewed", body: "Mwanza Refinery opened INV-2026-000482 for the first time." },
+          { kind: "ai", title: "Daily briefing ready", body: "May 04 morning summary delivered. 3 items flagged for attention.", unread: false },
+          { kind: "stock", title: "Low stock alert", body: "18K grade is at 612g — below 750g threshold.", unread: false },
+          { kind: "system", title: "Backup completed", body: "Daily database backup finished successfully (412 MB, encrypted).", unread: false },
+        ]
+      });
+    }
+
     return { success: true };
   }
 };
