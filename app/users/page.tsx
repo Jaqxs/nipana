@@ -16,6 +16,8 @@ export default function UserManagementPage() {
     role: "sales_ops",
   });
   const [error, setError] = useState("");
+  const [deletingUser, setDeletingUser] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -50,6 +52,37 @@ export default function UserManagementPage() {
       fetchUsers();
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingUser) return;
+    if (deletingUser.email === user?.email) {
+      alert("You cannot delete your own account.");
+      setDeletingUser(null);
+      return;
+    }
+
+    setDeleteLoading(true);
+
+    // Optimistic UI update
+    const previousUsers = [...users];
+    setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
+
+    try {
+      const res = await fetch(`/api/users/${deletingUser.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete user");
+      setDeletingUser(null);
+    } catch (err: any) {
+      alert(err.message || "An error occurred while deleting the user.");
+      // Rollback
+      setUsers(previousUsers);
+      setDeletingUser(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -113,9 +146,16 @@ export default function UserManagementPage() {
                 </td>
                 <td className="text-ink-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
-                  <button className="text-ink-faint hover:text-rose-700 transition">
-                    <i className="ri-delete-bin-line" />
-                  </button>
+                  {u.email !== user?.email ? (
+                    <button 
+                      className="text-ink-faint hover:text-rose-700 transition"
+                      onClick={() => setDeletingUser(u)}
+                    >
+                      <i className="ri-delete-bin-line" />
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-medium text-gold-700 bg-gold-50 px-2 py-1 rounded border border-gold-200">YOU</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -183,6 +223,30 @@ export default function UserManagementPage() {
             </p>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={!!deletingUser}
+        onClose={() => setDeletingUser(null)}
+        eyebrow="Access Control"
+        title="Delete Staff Access"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setDeletingUser(null)} disabled={deleteLoading}>Cancel</button>
+            <button className="btn-primary bg-rose-600 hover:bg-rose-700 text-white border-rose-600 hover:border-rose-700 disabled:opacity-50" onClick={confirmDelete} disabled={deleteLoading}>
+              {deleteLoading ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 py-2">
+          <p className="text-sm text-ink-muted">
+            Are you sure you want to delete access for <strong>{deletingUser?.name || deletingUser?.email}</strong>?
+          </p>
+          <p className="text-xs text-rose-600">
+            This action is permanent and cannot be undone. They will lose access to the system immediately.
+          </p>
+        </div>
       </Modal>
     </div>
   );

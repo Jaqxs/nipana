@@ -37,11 +37,7 @@ export function LoginScreen() {
     }
   };
 
-  const fillDemo = (which: "admin" | "ops") => {
-    setEmail(which === "admin" ? "director@nipanaatlas.co.tz" : "ceo@nipanaatlas.co.tz");
-    setPassword("nipana2026");
-    setError(null);
-  };
+
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-black">
@@ -158,24 +154,7 @@ export function LoginScreen() {
           </button>
         </form>
 
-        <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 h-px bg-line" />
-          <span className="text-[10px] uppercase tracking-[0.18em] text-ink-faint text-center">Demo accounts</span>
-          <div className="flex-1 h-px bg-line" />
-        </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => fillDemo("admin")} className="surface-flat bg-white/50 p-3 text-left hover:border-gold-500 transition">
-            <div className="text-[11px] uppercase tracking-[0.14em] text-gold-700 mb-1">Director</div>
-            <div className="text-sm text-ink font-medium">Administrative</div>
-            <div className="text-[11px] text-ink-muted truncate">director@nipanaatlas.co.tz</div>
-          </button>
-          <button onClick={() => fillDemo("ops")} className="surface-flat bg-white/50 p-3 text-left hover:border-gold-500 transition">
-            <div className="text-[11px] uppercase tracking-[0.14em] text-ink-muted mb-1">CEO</div>
-            <div className="text-sm text-ink font-medium">Administrative</div>
-            <div className="text-[11px] text-ink-muted truncate">ceo@nipanaatlas.co.tz</div>
-          </button>
-        </div>
 
         <p className="text-[10px] text-ink-faint mt-8 text-center uppercase tracking-wider">
           © 2026 NIPANA Atlas · Mwanza Operations
